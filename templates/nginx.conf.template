@@ -1,9 +1,3 @@
-# Security headers
-add_header X-Frame-Options DENY;
-add_header X-Content-Type-Options nosniff;
-add_header Referrer-Policy no-referrer;
-add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
 # Rate limiting zone for DDoS protection
 limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
 
