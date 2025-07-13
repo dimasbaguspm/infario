@@ -6,10 +6,6 @@ add_header X-Content-Type-Options nosniff;
 add_header Referrer-Policy no-referrer;
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-# Gzip compression
-gzip on;
-gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
 # Rate limiting zone for DDoS protection
 limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
 
