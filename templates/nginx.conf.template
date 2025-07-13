@@ -6,9 +6,6 @@ add_header X-Content-Type-Options nosniff;
 add_header Referrer-Policy no-referrer;
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-# SSL settings
-ssl_prefer_server_ciphers on;
-
 # Gzip compression
 gzip on;
 gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
