@@ -7,7 +7,7 @@
   },
   {
     "subdomain": "spenicle.dimasbaguspm.com",
-    "port": 8008,
+    "port": 8080,
     "appId": "spenicle",
     "rateLimitPerSecond": 20
   },
