@@ -1,6 +1,6 @@
 services:
   nginx:
-    build: .
+    image: nginx:1.25-alpine
     container_name: infario-nginx
     ports:
       - "80:80"
