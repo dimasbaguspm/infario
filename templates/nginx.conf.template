@@ -28,7 +28,6 @@ server {
 
     # Rate limiting and connection limits
     limit_req zone={{ZONE_NAME}} burst=40 nodelay;
-    limit_conn addr 15;
 
     location / {
         proxy_pass http://localhost:{{PORT}};
