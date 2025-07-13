@@ -1,0 +1,19 @@
+# SSL certificates and keys
+ssl/
+!ssl/.gitkeep
+
+# Generated Nginx configs
+conf.d/*.conf
+
+# Docker build artifacts
+*.log
+*.pid
+
+# VS Code and editor files
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
