@@ -1,9 +1,6 @@
 # Nginx Dockerfile for automation setup
 FROM nginx:stable-alpine
 
-
-# Copy main nginx config
-COPY templates/nginx.conf.template /etc/nginx/nginx.conf
 # Copy per-project configs
 COPY conf.d/ /etc/nginx/conf.d/
 
