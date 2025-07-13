@@ -5,7 +5,7 @@ FROM nginx:stable-alpine
 COPY conf.d/ /etc/nginx/conf.d/
 
 # Copy SSL certificates
-COPY ssl/ /etc/nginx/ssl/
+# SSL certificates are mounted from the host using a Docker volume (see docker-compose.yml)
 
 # Expose HTTP and HTTPS ports
 EXPOSE 80 443

@@ -41,7 +41,7 @@ This project automates the setup and management of Nginx for multiple projects, 
 5. **Build and Run Nginx in Docker**
    - Build and start the container:
      ```bash
-     docker-compose up --build -d
+     docker compose up --build -d
      ```
    - This will use your generated configs and SSL certs.
 
