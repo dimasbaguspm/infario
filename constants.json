@@ -1,9 +1,9 @@
 [
   {
     "subdomain": "versaur.dimasbaguspm.com",
-    "port": 6006,
+    "port": 8081,
     "appId": "versaur",
-    "rateLimitPerSecond": 10
+    "rateLimitPerSecond": 20
   },
   {
     "subdomain": "spenicle.dimasbaguspm.com",
