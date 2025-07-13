@@ -8,5 +8,6 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
       - ./conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
