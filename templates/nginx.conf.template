@@ -1,65 +1,53 @@
+include       /etc/nginx/mime.types;
+default_type  application/octet-stream;
+sendfile        on;
+keepalive_timeout  65;
 
-worker_processes auto;
+# Security headers
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+add_header Referrer-Policy no-referrer;
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
+# SSL settings
+ssl_prefer_server_ciphers on;
 
-events {
-    worker_connections  1024;
+# Gzip compression
+gzip on;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+# Rate limiting zone for DDoS protection
+limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
+
+# Connection limiting
+limit_conn_zone $binary_remote_addr zone=addr:10m;
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name {{SUBDOMAIN}};
+    return 301 https://$host$request_uri;
 }
 
-http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-    sendfile        on;
-    keepalive_timeout  65;
+# Main App/API server block
+server {
+    listen 443 ssl;
+    server_name {{SUBDOMAIN}};
 
-    # Security headers
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header Referrer-Policy no-referrer;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    ssl_certificate     /etc/nginx/ssl/{{APPID}}/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/{{APPID}}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
 
-    # SSL settings
-    ssl_prefer_server_ciphers on;
+    # Rate limiting and connection limits
+    limit_req zone={{ZONE_NAME}} burst=40 nodelay;
+    limit_conn addr 15;
 
-    # Gzip compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-    # Rate limiting zone for DDoS protection
-    limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
-
-    # Connection limiting
-    limit_conn_zone $binary_remote_addr zone=addr:10m;
-
-    # Redirect HTTP to HTTPS
-    server {
-        listen 80;
-        server_name {{SUBDOMAIN}};
-        return 301 https://$host$request_uri;
-    }
-
-    # Main App/API server block
-    server {
-        listen 443 ssl;
-        server_name {{SUBDOMAIN}};
-
-        ssl_certificate     /etc/nginx/ssl/{{APPID}}/fullchain.pem;
-        ssl_certificate_key /etc/nginx/ssl/{{APPID}}/privkey.pem;
-        ssl_protocols       TLSv1.2 TLSv1.3;
-        ssl_ciphers         HIGH:!aNULL:!MD5;
-
-        # Rate limiting and connection limits
-        limit_req zone={{ZONE_NAME}} burst=40 nodelay;
-        limit_conn addr 15;
-
-        location / {
-            proxy_pass http://localhost:{{PORT}};
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+    location / {
+        proxy_pass http://localhost:{{PORT}};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
