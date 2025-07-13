@@ -9,10 +9,23 @@ jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
   APPID=$(echo $item | jq -r '.appId')
   SUBDOMAIN=$(echo $item | jq -r '.subdomain')
 
+  # Check on host
   if lsof -iTCP:$PORT -sTCP:LISTEN -P | grep -q LISTEN; then
-    echo "✅ Port $PORT for $APPID ($SUBDOMAIN) is running."
+    echo "✅ Port $PORT for $APPID ($SUBDOMAIN) is running on host."
   else
-    echo "❌ Port $PORT for $APPID ($SUBDOMAIN) is NOT running!"
+    echo "❌ Port $PORT for $APPID ($SUBDOMAIN) is NOT running on host!"
   fi
 
+  # Check in Docker containers
+  CONTAINER_ID=$(docker ps --format '{{.ID}} {{.Ports}} {{.Names}}' | grep ":$PORT" | awk '{print $1}')
+  if [ -n "$CONTAINER_ID" ]; then
+    # Check if port is listening inside the container
+    if docker exec "$CONTAINER_ID" sh -c "netstat -tln | grep :$PORT" >/dev/null 2>&1; then
+      echo "✅ Port $PORT for $APPID ($SUBDOMAIN) is listening inside Docker container $CONTAINER_ID."
+    else
+      echo "❌ Port $PORT for $APPID ($SUBDOMAIN) is NOT listening inside Docker container $CONTAINER_ID!"
+    fi
+  else
+    echo "❌ No Docker container exposing port $PORT for $APPID ($SUBDOMAIN)."
+  fi
 done
