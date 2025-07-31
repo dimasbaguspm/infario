@@ -9,6 +9,6 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./conf.d:/etc/nginx/conf.d:ro
-      - ./deployments:/deployments:ro
+      - /deployments/:/deployments:ro
     restart: unless-stopped
 
