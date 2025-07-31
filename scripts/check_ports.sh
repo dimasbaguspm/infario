@@ -5,6 +5,13 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONSTANTS_FILE="$SCRIPT_DIR/../constants.json"
 
 jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
+  TYPE=$(echo $item | jq -r '.type')
+  if [ "$TYPE" != "serve" ]; then
+    APPID=$(echo $item | jq -r '.appId')
+    SUBDOMAIN=$(echo $item | jq -r '.subdomain')
+    echo "ℹ️  Skipping port check for $APPID ($SUBDOMAIN) because type is not 'serve'."
+    continue
+  fi
   PORT=$(echo $item | jq -r '.port')
   APPID=$(echo $item | jq -r '.appId')
   SUBDOMAIN=$(echo $item | jq -r '.subdomain')

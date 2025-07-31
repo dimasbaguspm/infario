@@ -81,12 +81,14 @@ case "$1" in
     echo "Usage: $0 {up|down|clean-cache|logs [service]|exec <service> <cmd>|memory-monitor}"
     echo ""
     echo "Commands:"
-    echo "  up                - Start all services"
+    echo "  up                - Start all services (only needed for 'serve' type apps)"
     echo "  down              - Stop all services"
     echo "  clean-cache       - Remove containers/images/volumes and rebuild"
     echo "  logs [service]    - Show logs (all or specific service)"
     echo "  exec <service> <cmd> - Exec into a service container"
     echo "  memory-monitor    - Show memory usage for containers and system"
+    echo ""
+    echo "Note: Static sites (type=static) are served directly by Nginx and do not require a backend port or container."
     print_env_info
     exit 1
     ;;

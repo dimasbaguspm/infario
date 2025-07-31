@@ -1,4 +1,4 @@
-# Rate limiting zone for DDoS protection
+# Nginx config for static type
 limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
 
 # Redirect HTTP to HTTPS
@@ -8,7 +8,6 @@ server {
     return 301 https://$host$request_uri;
 }
 
-# Main App/API server block
 server {
     listen 443 ssl;
     server_name {{SUBDOMAIN}};
@@ -18,14 +17,12 @@ server {
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
 
-    # Rate limiting and connection limits
     limit_req zone={{ZONE_NAME}} burst=40 nodelay;
 
+    root {{PATH}};
+    index {{ROOTFILE}};
+
     location / {
-        proxy_pass http://139.99.43.97:{{PORT}};
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        try_files $uri $uri/ /{{ROOTFILE}};
     }
 }

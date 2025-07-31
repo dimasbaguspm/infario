@@ -12,6 +12,14 @@ fi
 
 jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
   SUBDOMAIN=$(echo $item | jq -r '.subdomain')
+  TYPE=$(echo $item | jq -r '.type')
+  PATH_VAL=$(echo $item | jq -r '.path // empty')
+  ROOTFILE=$(echo $item | jq -r '.rootFile // empty')
+  if [ "$TYPE" = "static" ]; then
+    if [ -z "$PATH_VAL" ] || [ -z "$ROOTFILE" ]; then
+      echo "⚠️  Warning: Static site $SUBDOMAIN missing 'path' or 'rootFile' in constants.json. SSL will still be generated."
+    fi
+  fi
   sudo certbot certonly --standalone -d "$SUBDOMAIN" --non-interactive --agree-tos --register-unsafely-without-email
 done
 

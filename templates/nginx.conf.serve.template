@@ -1,0 +1,29 @@
+# Nginx config for serve (reverse proxy) type
+limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name {{SUBDOMAIN}};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name {{SUBDOMAIN}};
+
+    ssl_certificate     /etc/letsencrypt/live/{{SUBDOMAIN}}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{SUBDOMAIN}}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    limit_req zone={{ZONE_NAME}} burst=40 nodelay;
+
+    location / {
+        proxy_pass http://139.99.43.97:{{PORT}};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

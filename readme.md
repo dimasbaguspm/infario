@@ -22,7 +22,8 @@ Each project's `subdomain` is defined in `constants.json`.
 
 
 ## Structure
-- `templates/nginx.conf.template`: Nginx config template for per-project generation, supports per-project rate limiting
+- `templates/nginx.conf.serve.template`: Nginx config template for reverse-proxy (type=serve) projects
+- `templates/nginx.conf.static.template`: Nginx config template for static (type=static) projects, with SPA routing support
 - `conf.d/`: Per-project Nginx configs (e.g., `project1.conf`)
 - `scripts/`: Automation scripts for config and SSL generation, reload
 - `ssl/`: SSL certificates and keys (mounted to `/etc/nginx/ssl` in container)
@@ -61,13 +62,15 @@ Each project's `subdomain` is defined in `constants.json`.
      ```bash
      docker compose up --build -d
      ```
-   - This uses your generated configs and SSL certs.
+   - This uses your generated configs, SSL certs, and mounts the `/deployments` directory for static sites.
+   - Any changes to files in `/deployments` on the host are immediately reflected inside the container (no restart needed for static file updates).
 
 
 ## Example
 - See `constants.json` for a sample project definition, including `rateLimitPerSecond`.
 - See `conf.d/` for generated configs.
 - SSL certs are stored in `/etc/nginx/ssl/{appId}/`.
+- Static deployments are stored in `/deployments/{your-app}/` and are mounted read-only into the Nginx container.
 
 ## Notes
 - Make sure your DNS records point to your VPS for each subdomain.
@@ -75,3 +78,5 @@ Each project's `subdomain` is defined in `constants.json`.
   ```bash
   0 12 * * * /usr/bin/certbot renew --quiet
   ```
+- All static deployments in `/deployments` (and subdirectories) are accessible to Nginx. No need to add extra mounts for subfolders.
+- Ensure permissions for `/deployments` and its contents allow world-read (directories: 755, files: 644) so Nginx can serve them.

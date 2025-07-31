@@ -1,18 +1,23 @@
 [
   {
     "subdomain": "versaur.dimasbaguspm.com",
-    "port": 8081,
+    "type": "static",
+    "path": "/deployments/versaur/storybook-static",
+    "rootFile": "index.html",
+    "port": null,
     "appId": "versaur",
     "rateLimitPerSecond": 20
   },
   {
     "subdomain": "spenicle.dimasbaguspm.com",
+    "type": "serve",
     "port": 8080,
     "appId": "spenicle",
     "rateLimitPerSecond": 20
   },
   {
     "subdomain": "spenicle-api.dimasbaguspm.com",
+    "type": "serve",
     "port": 3000,
     "appId": "spenicle-api",
     "rateLimitPerSecond": 10    
