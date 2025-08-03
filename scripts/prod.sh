@@ -53,42 +53,19 @@ case "$1" in
     echo "✅ Cache cleaned and all services rebuilt"
     ;;
   logs)
-    SERVICE=${2:-""}
-    if [ -n "$SERVICE" ]; then
-      echo "📋 Showing logs for service: $SERVICE"
-      docker compose -f $COMPOSE_FILE logs -f $SERVICE
-    else
-      echo "📋 Showing logs for all services"
-      docker compose -f $COMPOSE_FILE logs -f
-    fi
-    ;;
-  exec)
-    SERVICE=${2:-""}
-    shift 2
-    if [ -z "$SERVICE" ]; then
-      echo "❌ Error: Please specify a service to exec into."
-      exit 1
-    fi
-    docker compose -f $COMPOSE_FILE exec $SERVICE "$@"
-    ;;
-  memory-monitor)
-    echo "📊 Docker container memory usage (snapshot):"
-    docker stats --no-stream
-    echo "🖥️  System memory usage (free -h):"
-    free -h
+    echo "📋 Showing logs for all services"
+    docker compose -f $COMPOSE_FILE logs -f
     ;;
   *)
-    echo "Usage: $0 {up|down|clean-cache|logs [service]|exec <service> <cmd>|memory-monitor}"
+    echo "Usage: $0 {up|down|clean-cache|logs"
     echo ""
     echo "Commands:"
-    echo "  up                - Start all services (only needed for 'serve' type apps)"
-    echo "  down              - Stop all services"
+    echo "  up                - Start nginx"
+    echo "  down              - Stop nginx"
     echo "  clean-cache       - Remove containers/images/volumes and rebuild"
-    echo "  logs [service]    - Show logs (all or specific service)"
-    echo "  exec <service> <cmd> - Exec into a service container"
-    echo "  memory-monitor    - Show memory usage for containers and system"
+    echo "  logs              - Show logs"
     echo ""
-    echo "Note: Static sites (type=static) are served directly by Nginx and do not require a backend port or container."
+echo "Note: Static sites (type=static) are served directly by Nginx and do not require a backend port or container."
     print_env_info
     exit 1
     ;;

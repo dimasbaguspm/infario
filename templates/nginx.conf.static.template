@@ -4,16 +4,16 @@ limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
 # Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name {{SUBDOMAIN}};
+    server_name {{DOMAIN}};
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name {{SUBDOMAIN}};
+    server_name {{DOMAIN}};
 
-    ssl_certificate     /etc/letsencrypt/live/{{SUBDOMAIN}}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/{{SUBDOMAIN}}/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/{{DOMAIN}}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{DOMAIN}}/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
 

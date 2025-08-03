@@ -2,8 +2,6 @@
 ssl/
 !ssl/.gitkeep
 
-# Generated Nginx configs
-conf.d/*.conf
 
 # Docker build artifacts
 *.log

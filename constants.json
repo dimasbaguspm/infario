@@ -1,24 +1,22 @@
 [
   {
-    "subdomain": "versaur.dimasbaguspm.com",
+    "domain": "versaur.dimasbaguspm.com",
     "type": "static",
     "path": "/deployments/versaur/storybook-static",
     "rootFile": "index.html",
-    "port": null,
     "appId": "versaur",
     "rateLimitPerSecond": 20
   },
   {
-    "subdomain": "spenicle.dimasbaguspm.com",
+    "domain": "spenicle.dimasbaguspm.com",
     "type": "static",
     "path": "/deployments/spenicle-web/build/client",
     "rootFile": "index.html",
-    "port": null,
     "appId": "spenicle-web",
     "rateLimitPerSecond": 20
   },
   {
-    "subdomain": "spenicle-api.dimasbaguspm.com",
+    "domain": "spenicle-api.dimasbaguspm.com",
     "type": "serve",
     "port": 3333,
     "appId": "spenicle-api",

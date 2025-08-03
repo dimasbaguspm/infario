@@ -7,6 +7,8 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONSTANTS_FILE="$SCRIPT_DIR/../constants.json"
 CONF_DIR="$SCRIPT_DIR/../conf.d"
 
+rm -f "$CONF_DIR"/*.conf
+
 TEMPLATE_SERVE_FILE="$SCRIPT_DIR/../templates/nginx.conf.serve.template"
 TEMPLATE_STATIC_FILE="$SCRIPT_DIR/../templates/nginx.conf.static.template"
 
@@ -16,7 +18,7 @@ if [ ! -f "$TEMPLATE_SERVE_FILE" ] || [ ! -f "$TEMPLATE_STATIC_FILE" ]; then
 fi
 
 jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
-  SUBDOMAIN=$(echo $item | jq -r '.subdomain')
+  DOMAIN=$(echo $item | jq -r '.domain')
   TYPE=$(echo $item | jq -r '.type')
   PORT=$(echo $item | jq -r '.port // empty')
   APPID=$(echo $item | jq -r '.appId')
@@ -33,7 +35,7 @@ jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
   fi
 
   sed \
-    -e "s/{{SUBDOMAIN}}/$SUBDOMAIN/g" \
+    -e "s/{{DOMAIN}}/$DOMAIN/g" \
     -e "s/{{PORT}}/$PORT/g" \
     -e "s/{{APPID}}/$APPID/g" \
     -e "s/{{ZONE_NAME}}/$ZONE_NAME/g" \
@@ -42,5 +44,6 @@ jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
     -e "s#{{ROOTFILE}}#$ROOTFILE#g" \
     "$TEMPLATE_FILE" > "$CONF_FILE"
 done
+ 
 
 echo "Nginx configs generated for all projects using template."
