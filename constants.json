@@ -9,16 +9,9 @@
     "rateLimitPerSecond": 20
   },
   {
-    "subdomain": "spenicle.dimasbaguspm.com",
-    "type": "serve",
-    "port": 8080,
-    "appId": "spenicle",
-    "rateLimitPerSecond": 20
-  },
-  {
     "subdomain": "spenicle-api.dimasbaguspm.com",
     "type": "serve",
-    "port": 3000,
+    "port": 3333,
     "appId": "spenicle-api",
     "rateLimitPerSecond": 10    
   }
