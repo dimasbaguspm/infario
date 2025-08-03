@@ -9,6 +9,15 @@
     "rateLimitPerSecond": 20
   },
   {
+    "subdomain": "spenicle.dimasbaguspm.com",
+    "type": "static",
+    "path": "/deployments/spenicle-web/build/client",
+    "rootFile": "index.html",
+    "port": null,
+    "appId": "spenicle-web",
+    "rateLimitPerSecond": 20
+  },
+  {
     "subdomain": "spenicle-api.dimasbaguspm.com",
     "type": "serve",
     "port": 3333,
