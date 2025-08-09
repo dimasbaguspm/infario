@@ -17,10 +17,11 @@ if [ ! -f "$TEMPLATE_SERVE_FILE" ] || [ ! -f "$TEMPLATE_STATIC_FILE" ]; then
   exit 1
 fi
 
-jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
+jq -c '.projects[]' "$CONSTANTS_FILE" | while read -r item; do
   DOMAIN=$(echo $item | jq -r '.domain')
   TYPE=$(echo $item | jq -r '.type')
   PORT=$(echo $item | jq -r '.port // empty')
+  IP_HOST=$(jq -r '.host' "$CONSTANTS_FILE")
   APPID=$(echo $item | jq -r '.appId')
   RATELIMIT=$(echo $item | jq -r '.rateLimitPerSecond // 20')
   ZONE_NAME=$(echo $APPID | sed 's/[^a-zA-Z0-9]/_/g')
@@ -42,6 +43,7 @@ jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
     -e "s/{{RATELIMIT}}/$RATELIMIT/g" \
     -e "s#{{PATH}}#$PATH_VAL#g" \
     -e "s#{{ROOTFILE}}#$ROOTFILE#g" \
+    -e "s/{{IP_HOST}}/$IP_HOST/g" \
     "$TEMPLATE_FILE" > "$CONF_FILE"
 done
  

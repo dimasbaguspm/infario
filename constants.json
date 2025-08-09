@@ -1,32 +1,35 @@
-[
-  {
-    "domain": "versaur.dimasbaguspm.com",
-    "type": "static",
-    "path": "/deployments/versaur/storybook-static",
-    "rootFile": "index.html",
-    "appId": "versaur",
-    "rateLimitPerSecond": 20
-  },
-  {
-    "domain": "spenicle.dimasbaguspm.com",
-    "type": "static",
-    "path": "/deployments/spenicle-web/build/client",
-    "rootFile": "index.html",
-    "appId": "spenicle-web",
-    "rateLimitPerSecond": 20
-  },
-  {
-    "domain": "spenicle-api.dimasbaguspm.com",
-    "type": "serve",
-    "port": 3333,
-    "appId": "spenicle-api",
-    "rateLimitPerSecond": 10    
-  },
+{
+  "host": "139.99.43.97",
+  "projects": [
     {
-    "domain": "hi.dimasbaguspm.com",
-    "type": "serve",
-    "port": 3000,
-    "appId": "hi-api",
-    "rateLimitPerSecond": 10    
-  }
-]
+      "domain": "versaur.dimasbaguspm.com",
+      "type": "static",
+      "path": "/deployments/versaur/storybook-static",
+      "rootFile": "index.html",
+      "appId": "versaur",
+      "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "spenicle.dimasbaguspm.com",
+      "type": "static",
+      "path": "/deployments/spenicle-web/build/client",
+      "rootFile": "index.html",
+      "appId": "spenicle-web",
+      "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "spenicle-api.dimasbaguspm.com",
+      "type": "serve",
+      "port": 3001,
+      "appId": "spenicle-api",
+      "rateLimitPerSecond": 10    
+    },
+      {
+      "domain": "hi.dimasbaguspm.com",
+      "type": "serve",
+      "port": 3000,
+      "appId": "hi-api",
+      "rateLimitPerSecond": 10    
+    }
+  ]
+}
