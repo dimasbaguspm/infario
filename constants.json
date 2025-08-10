@@ -24,11 +24,18 @@
       "appId": "spenicle-api",
       "rateLimitPerSecond": 10    
     },
-      {
+    {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
       "appId": "hi-api",
+      "rateLimitPerSecond": 10    
+    },
+    {
+      "domain": "login.dimasbaguspm.com",
+      "type": "serve",
+      "port": 3002,
+      "appId": "login",
       "rateLimitPerSecond": 10    
     }
   ]
