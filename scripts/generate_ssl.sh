@@ -10,7 +10,7 @@ if ! command -v certbot &> /dev/null; then
   exit 1
 fi
 
-jq -c '.[]' "$CONSTANTS_FILE" | while read -r item; do
+jq -c '.projects[]' "$CONSTANTS_FILE" | while read -r item; do
   DOMAIN=$(echo $item | jq -r '.domain')
   TYPE=$(echo $item | jq -r '.type')
   PATH_VAL=$(echo $item | jq -r '.path // empty')
