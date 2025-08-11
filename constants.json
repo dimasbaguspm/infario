@@ -37,6 +37,14 @@
       "port": 3002,
       "appId": "login",
       "rateLimitPerSecond": 10    
+    },
+    {
+      "domain": "hub.dimasbaguspm.com",
+      "type": "static",
+      "path": "/deployments/web-app/hub/apps/hub/dist",
+      "rootFile": "index.html",
+      "appId": "hub-web",
+      "rateLimitPerSecond": 20
     }
   ]
 }
