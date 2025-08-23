@@ -10,33 +10,25 @@
       "rateLimitPerSecond": 20
     },
     {
-      "domain": "spenicle.dimasbaguspm.com",
-      "type": "static",
-      "path": "/deployments/spenicle-web/build/client",
-      "rootFile": "index.html",
-      "appId": "spenicle-web",
-      "rateLimitPerSecond": 20
-    },
-    {
       "domain": "spenicle-api.dimasbaguspm.com",
       "type": "serve",
       "port": 3001,
       "appId": "spenicle-api",
-      "rateLimitPerSecond": 10    
+      "rateLimitPerSecond": 10
     },
     {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
       "appId": "hi-api",
-      "rateLimitPerSecond": 10    
+      "rateLimitPerSecond": 10
     },
     {
       "domain": "login.dimasbaguspm.com",
       "type": "serve",
       "port": 3002,
       "appId": "login",
-      "rateLimitPerSecond": 10    
+      "rateLimitPerSecond": 10
     },
     {
       "domain": "hub.dimasbaguspm.com",
@@ -44,6 +36,14 @@
       "path": "/deployments/web-app/hub/apps/hub/dist",
       "rootFile": "index.html",
       "appId": "hub-web",
+      "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "spenicle.dimasbaguspm.com",
+      "type": "static",
+      "path": "/deployments/web-app/spenicle/apps/spenicle/dist",
+      "rootFile": "index.html",
+      "appId": "spenicle-web",
       "rateLimitPerSecond": 20
     }
   ]
