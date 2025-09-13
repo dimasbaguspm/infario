@@ -45,6 +45,14 @@
       "rootFile": "index.html",
       "appId": "spenicle-web",
       "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "notunic.dimasbaguspm.com",
+      "type": "static",
+      "path": "/deployments/web-app/notunic/apps/notunic/dist",
+      "rootFile": "index.html",
+      "appId": "notunic-web",
+      "rateLimitPerSecond": 20
     }
   ]
 }
