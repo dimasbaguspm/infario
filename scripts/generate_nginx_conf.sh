@@ -6,6 +6,12 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONSTANTS_FILE="$SCRIPT_DIR/../constants.json"
 CONF_DIR="$SCRIPT_DIR/../conf.d"
+ENV_FILE="$SCRIPT_DIR/../.env"
+
+# Load USER from .env
+if [ -f "$ENV_FILE" ]; then
+  export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
 
 rm -f "$CONF_DIR"/*.conf
 
@@ -26,6 +32,8 @@ jq -c '.projects[]' "$CONSTANTS_FILE" | while read -r item; do
   RATELIMIT=$(echo $item | jq -r '.rateLimitPerSecond // 20')
   ZONE_NAME=$(echo $APPID | sed 's/[^a-zA-Z0-9]/_/g')
   PATH_VAL=$(echo $item | jq -r '.path // empty')
+  # Robustly replace leading ~/ with /home/${USER}/
+  PATH_VAL="${PATH_VAL/#~\//\/home\/${USER}\/}"
   ROOTFILE=$(echo $item | jq -r '.rootFile // empty')
   CONF_FILE="$CONF_DIR/$APPID.conf"
 

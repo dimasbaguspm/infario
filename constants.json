@@ -4,7 +4,7 @@
     {
       "domain": "versaur.dimasbaguspm.com",
       "type": "static",
-      "path": "$HOME/versaur/storybook-static",
+      "path": "~/versaur/storybook-static",
       "rootFile": "index.html",
       "appId": "versaur",
       "rateLimitPerSecond": 20

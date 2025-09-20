@@ -1,3 +1,5 @@
+.env
+
 # SSL certificates and keys
 ssl/
 !ssl/.gitkeep

@@ -11,4 +11,6 @@ services:
       - ./conf.d:/etc/nginx/conf.d:ro
       - ${HOME}:${HOME}:ro
       - /deployments/:/deployments:ro
+    env_file:
+      - .env
     restart: unless-stopped
