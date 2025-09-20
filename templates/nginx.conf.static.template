@@ -3,6 +3,11 @@ limit_req_zone $binary_remote_addr zone={{ZONE_NAME}}:10m rate={{RATELIMIT}}r/s;
 
 # Redirect HTTP to HTTPS
 server {
+    # Enable gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 256;
+
     listen 80;
     server_name {{DOMAIN}};
     return 301 https://$host$request_uri;
@@ -23,6 +28,22 @@ server {
     index {{ROOTFILE}};
 
     location / {
-        try_files $uri $uri/ /{{ROOTFILE}};
+        try_files $uri $uri/ /{{ROOTFILE}} =404;
+        # Security headers
+        add_header X-Content-Type-Options nosniff;
+        add_header X-Frame-Options DENY;
+        add_header X-XSS-Protection "1; mode=block";
+    }
+
+    # Cache static assets aggressively
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Cache HTML moderately
+    location ~* \.(html)$ {
+        expires 1h;
+        add_header Cache-Control "public";
     }
 }
