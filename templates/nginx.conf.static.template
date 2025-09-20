@@ -14,7 +14,7 @@ server {
 }
 
 server {
-    listen 443 ssl;
+    listen 443 ssl http2;
     server_name {{DOMAIN}};
 
     ssl_certificate     /etc/letsencrypt/live/{{DOMAIN}}/fullchain.pem;
@@ -23,6 +23,9 @@ server {
     ssl_ciphers         HIGH:!aNULL:!MD5;
 
     limit_req zone={{ZONE_NAME}} burst=40 nodelay;
+
+    etag on;
+    client_max_body_size 10M;
 
     root {{PATH}};
     index {{ROOTFILE}};
