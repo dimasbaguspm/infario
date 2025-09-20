@@ -6,7 +6,6 @@ on:
 
 env:
   CI: true
-  USER: ${{ secrets.VPS_USER }}
 
 jobs:
   deploy:

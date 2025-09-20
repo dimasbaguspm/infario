@@ -7,6 +7,14 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONSTANTS_FILE="$SCRIPT_DIR/../constants.json"
 CONF_DIR="$SCRIPT_DIR/../conf.d"
 
+# Set USER to SUDO_USER if running with sudo, otherwise to whoami
+if [ -n "$SUDO_USER" ]; then
+  USER="$SUDO_USER"
+else
+  USER=$(whoami)
+fi
+
+
 rm -f "$CONF_DIR"/*.conf
 mkdir -p "$CONF_DIR"
 
