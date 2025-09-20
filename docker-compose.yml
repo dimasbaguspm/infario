@@ -10,4 +10,5 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /deployments/:/deployments:ro
       - ${HOME}:${HOME}:ro
+      - ./conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
