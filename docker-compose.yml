@@ -3,12 +3,14 @@ services:
     build: .
     image: nginx:1.25-alpine
     container_name: infario-nginx
+    env_file:
+      - .env
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /deployments/:/deployments:ro
-      - ${HOME}:${HOME}:ro
+      - ${USER_HOME}:${USER_HOME}:ro
       - ./conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
