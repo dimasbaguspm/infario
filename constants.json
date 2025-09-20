@@ -2,14 +2,6 @@
   "host": "139.99.43.97",
   "projects": [
     {
-      "domain": "versaur.dimasbaguspm.com",
-      "type": "static",
-      "path": "~/versaur/storybook-static",
-      "rootFile": "index.html",
-      "appId": "versaur",
-      "rateLimitPerSecond": 20
-    },
-    {
       "domain": "spenicle-api.dimasbaguspm.com",
       "type": "serve",
       "port": 3001,
@@ -31,9 +23,17 @@
       "rateLimitPerSecond": 10
     },
     {
+      "domain": "versaur.dimasbaguspm.com",
+      "type": "static",
+      "path": "~/versaur/storybook-static",
+      "rootFile": "index.html",
+      "appId": "versaur",
+      "rateLimitPerSecond": 20
+    },
+    {
       "domain": "hub.dimasbaguspm.com",
       "type": "static",
-      "path": "/deployments/web-app/hub/apps/hub/dist",
+      "path": "~/web-app/hub/apps/hub/dist",
       "rootFile": "index.html",
       "appId": "hub-web",
       "rateLimitPerSecond": 20
@@ -41,7 +41,7 @@
     {
       "domain": "spenicle.dimasbaguspm.com",
       "type": "static",
-      "path": "/deployments/web-app/spenicle/apps/spenicle/dist",
+      "path": "~/web-app/spenicle/apps/spenicle/dist",
       "rootFile": "index.html",
       "appId": "spenicle-web",
       "rateLimitPerSecond": 20
@@ -49,7 +49,7 @@
     {
       "domain": "notunic.dimasbaguspm.com",
       "type": "static",
-      "path": "/deployments/web-app/notunic/apps/notunic/dist",
+      "path": "~/web-app/notunic/apps/notunic/dist",
       "rootFile": "index.html",
       "appId": "notunic-web",
       "rateLimitPerSecond": 20
