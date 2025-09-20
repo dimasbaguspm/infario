@@ -1,4 +1,5 @@
 .env
+conf.d
 
 # SSL certificates and keys
 ssl/

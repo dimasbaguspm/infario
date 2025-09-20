@@ -6,14 +6,9 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONSTANTS_FILE="$SCRIPT_DIR/../constants.json"
 CONF_DIR="$SCRIPT_DIR/../conf.d"
-ENV_FILE="$SCRIPT_DIR/../.env"
-
-# Load USER from .env
-if [ -f "$ENV_FILE" ]; then
-  export $(grep -v '^#' "$ENV_FILE" | xargs)
-fi
 
 rm -f "$CONF_DIR"/*.conf
+mkdir -p "$CONF_DIR"
 
 TEMPLATE_SERVE_FILE="$SCRIPT_DIR/../templates/nginx.conf.serve.template"
 TEMPLATE_STATIC_FILE="$SCRIPT_DIR/../templates/nginx.conf.static.template"

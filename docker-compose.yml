@@ -8,9 +8,6 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./conf.d:/etc/nginx/conf.d:ro
-      - ${HOME}:${HOME}:ro
       - /deployments/:/deployments:ro
-    env_file:
-      - .env
+      - ${HOME}:${HOME}:ro
     restart: unless-stopped
