@@ -9,6 +9,13 @@
       "rateLimitPerSecond": 10
     },
     {
+      "domain": "notunic-api.dimasbaguspm.com",
+      "type": "serve",
+      "port": 3003,
+      "appId": "notunic-api",
+      "rateLimitPerSecond": 10
+    },
+    {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
