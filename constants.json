@@ -60,6 +60,14 @@
       "rootFile": "index.html",
       "appId": "notunic-web",
       "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "buana-grafika-catalog.dimasbaguspm.com",
+      "type": "static",
+      "path": "~/web-app/buana-grafika-book-catalog/dist",
+      "rootFile": "index.html",
+      "appId": "buana-grafika-catalog",
+      "rateLimitPerSecond": 20
     }
   ]
 }
