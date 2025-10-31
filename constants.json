@@ -16,6 +16,13 @@
       "rateLimitPerSecond": 10
     },
     {
+      "domain": "versicle-api.dimasbaguspm.com",
+      "type": "serve",
+      "port": 3004,
+      "appId": "versicle-api",
+      "rateLimitPerSecond": 10
+    },
+    {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
