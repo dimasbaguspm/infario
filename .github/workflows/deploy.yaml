@@ -27,10 +27,11 @@ jobs:
             git reset --hard
             git pull origin main
 
+            sudo docker compose down
+
             sudo ./scripts/generate_nginx_conf.sh
 
             sudo ./scripts/generate_ssl.sh
 
-            sudo docker compose down
             sudo docker compose build --no-cache
             sudo docker compose up -d

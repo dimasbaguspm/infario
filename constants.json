@@ -23,6 +23,13 @@
       "rateLimitPerSecond": 10
     },
     {
+      "domain": "vaultic.dimasbaguspm.com",
+      "type": "serve",
+      "port": 9000,
+      "appId": "vaultic",
+      "rateLimitPerSecond": 20
+    },
+    {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
