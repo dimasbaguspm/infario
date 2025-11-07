@@ -30,6 +30,13 @@
       "rateLimitPerSecond": 20
     },
     {
+      "domain": "vaultic-api.dimasbaguspm.com",
+      "type": "serve",
+      "port": 9001,
+      "appId": "vaultic-api",
+      "rateLimitPerSecond": 10
+    },
+    {
       "domain": "hi.dimasbaguspm.com",
       "type": "serve",
       "port": 3000,
