@@ -2,6 +2,13 @@
   "host": "139.99.43.97",
   "projects": [
     {
+      "domain": "dbeer.dimasbaguspm.com",
+      "type": "serve",
+      "port": 6433,
+      "appId": "dbeer",
+      "rateLimitPerSecond": 10
+    },
+    {
       "domain": "spenicle-api.dimasbaguspm.com",
       "type": "serve",
       "port": 3001,
@@ -87,8 +94,15 @@
       "type": "static",
       "path": "~/web-app/buana-grafika-book-catalog/dist",
       "rootFile": "index.html",
-      "appId": "buana-grafika-catalog",
+      "appId": "buana-grafika-catalog-mock",
       "rateLimitPerSecond": 20
+    },
+    {
+      "domain": "buana-grafika-system.dimasbaguspm.com",
+      "type": "serve",
+      "port": 7432,
+      "appId": "buana-grafika-system",
+      "rateLimitPerSecond": 10
     }
   ]
 }
