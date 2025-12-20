@@ -9,6 +9,14 @@
       "rateLimitPerSecond": 10
     },
     {
+      "domain": "cv.dimasbaguspm.com",
+      "type": "static",
+      "path": "~/cv",
+      "rootFile": "index.html",
+      "appId": "cv",
+      "rateLimitPerSecond": 20
+    },
+    {
       "domain": "spenicle-api.dimasbaguspm.com",
       "type": "serve",
       "port": 3001,
