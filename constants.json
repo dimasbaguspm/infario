@@ -117,7 +117,7 @@
       "type": "serve",
       "port": 9111,
       "appId": "torker",
-      "rateLimitPerSecond": 10
+      "rateLimitPerSecond": 60
     }
   ]
 }
