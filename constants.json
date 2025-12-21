@@ -111,6 +111,13 @@
       "port": 7432,
       "appId": "buana-grafika-system",
       "rateLimitPerSecond": 10
+    },
+    {
+      "domain": "torker.dimasbaguspm.com",
+      "type": "serve",
+      "port": 9111,
+      "appId": "torker",
+      "rateLimitPerSecond": 10
     }
   ]
 }
