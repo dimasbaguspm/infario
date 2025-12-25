@@ -1,5 +1,5 @@
 {
-  "host": "139.99.43.97",
+  "host": "15.235.184.85",
   "projects": [
     {
       "domain": "dbeer.dimasbaguspm.com",
@@ -95,14 +95,6 @@
       "path": "~/web-app/notunic/apps/notunic/dist",
       "rootFile": "index.html",
       "appId": "notunic-web",
-      "rateLimitPerSecond": 20
-    },
-    {
-      "domain": "buana-grafika-catalog.dimasbaguspm.com",
-      "type": "static",
-      "path": "~/web-app/buana-grafika-book-catalog/dist",
-      "rootFile": "index.html",
-      "appId": "buana-grafika-catalog-mock",
       "rateLimitPerSecond": 20
     },
     {
