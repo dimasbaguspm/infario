@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: infario-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules  # prevent overwriting node_modules if exists
+    environment:
+      - GO_ENV=development
+    command: air -c .air.toml
+    networks:
+      - infario-network
+
+networks:
+  infario-network:
+    driver: bridge
