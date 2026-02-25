@@ -9,8 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dimasbaguspm/infario/internal/project"
 	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/dimasbaguspm/infario/pkgs/database"
+	"github.com/dimasbaguspm/infario/pkgs/response"
 )
 
 func main() {
@@ -37,11 +39,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	svr := http.NewServeMux()
+	mux := http.NewServeMux()
+
+	project.Init(mux, db)
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		response.Error(w, http.StatusNotFound, "The requested resource was not found")
+	})
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: svr,
+		Handler: mux,
 	}
 
 	go func() {
