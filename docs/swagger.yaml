@@ -19,14 +19,21 @@ definitions:
     description: Project creation DTO
     properties:
       git_provider:
+        enum:
+        - github
+        - gitlab
+        - bitbucket
         type: string
       git_url:
         type: string
       name:
+        maxLength: 100
+        minLength: 3
         type: string
       primary_branch:
         type: string
     required:
+    - git_provider
     - git_url
     - name
     type: object
@@ -54,12 +61,18 @@ definitions:
     description: Project update DTO
     properties:
       git_provider:
+        enum:
+        - github
+        - gitlab
+        - bitbucket
         type: string
       git_url:
         type: string
       id:
         type: string
       name:
+        maxLength: 100
+        minLength: 3
         type: string
       primary_branch:
         type: string

@@ -215,18 +215,26 @@ const docTemplate = `{
             "description": "Project creation DTO",
             "type": "object",
             "required": [
+                "git_provider",
                 "git_url",
                 "name"
             ],
             "properties": {
                 "git_provider": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "github",
+                        "gitlab",
+                        "bitbucket"
+                    ]
                 },
                 "git_url": {
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
                 },
                 "primary_branch": {
                     "type": "string"
@@ -271,7 +279,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "git_provider": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "github",
+                        "gitlab",
+                        "bitbucket"
+                    ]
                 },
                 "git_url": {
                     "type": "string"
@@ -280,7 +293,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
                 },
                 "primary_branch": {
                     "type": "string"
