@@ -152,10 +152,19 @@ HTTP Request
   - Supports `.env` files via `godotenv`
   - Default values for development
 
+- `request/params.go`
+  - `PagingParams` - Standard pagination parameters (pageNumber, pageSize)
+  - `Offset()` - Converts page-based params to database offset
+  - `ParsePaging()` - Parses pagination from HTTP query params with defaults
+
 - `response/response.go`
   - `JSON()` - Writes JSON with proper headers
   - `Error()` - Standard error response format
   - `MapValidationErrors()` - Converts validator.ValidationErrors to field messages
+
+- `response/page.go`
+  - `Collection[T]` - Generic paginated response with Items, TotalCount, PageNumber, PageSize, PageCount
+  - `NewCollection()` - Helper to create paginated responses with calculated page count
 
 - `validator/validator.go`
   - Global `validator.Validate` instance
@@ -330,6 +339,37 @@ WHERE deleted_at IS NULL
 
 -- Delete sets timestamp instead of removing row
 UPDATE projects SET deleted_at = NOW() WHERE id = $1
+```
+
+### Pagination Patterns
+
+**Offset-Based Pagination**
+
+Use offset-based pagination for **stable datasets** or when total count is essential. Implemented via `request.ParsePaging()` and `response.Collection[T]`.
+
+```go
+// domain.go
+type GetSingleProject struct {
+    ProjectID string `json:"project_id" validate:"required"`
+    request.PagingParams  // Embeds PageNumber, PageSize, and Offset() method
+}
+
+// postgres.go - Use OFFSET for page-based queries
+func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedProject) (*response.Collection[*Project], error) {
+    offset := params.Offset()  // (PageNumber - 1) * PageSize
+    query := `
+        WITH projects_cte AS (
+            SELECT *, COUNT(*) OVER () AS total_count
+            FROM projects
+            WHERE deleted_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+        )
+        SELECT *, total_count FROM projects_cte
+    `
+    // ... scan results
+    return response.NewCollection(projects, totalCount, params.PageNumber, params.PageSize), nil
+}
 ```
 
 ---
