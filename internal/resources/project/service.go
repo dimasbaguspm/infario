@@ -3,6 +3,8 @@ package project
 import (
 	"context"
 	"fmt"
+
+	"github.com/dimasbaguspm/infario/pkgs/validator"
 )
 
 type Service struct {
@@ -14,6 +16,9 @@ func NewService(repo ProjectRepository) *Service {
 }
 
 func (s *Service) GetProjectByID(ctx context.Context, p GetSingleProject) (*Project, error) {
+	if err := validator.Validate.Struct(p); err != nil {
+		return nil, fmt.Errorf("Validation failed: %w", err)
+	}
 	resp, err := s.repo.GetByID(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get project by id: %w", err)
@@ -22,6 +27,9 @@ func (s *Service) GetProjectByID(ctx context.Context, p GetSingleProject) (*Proj
 }
 
 func (s *Service) CreateNewProject(ctx context.Context, p CreateProject) (*Project, error) {
+	if err := validator.Validate.Struct(p); err != nil {
+		return nil, fmt.Errorf("Validation failed: %w", err)
+	}
 	ID, err := s.repo.Create(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create project: %w", err)
@@ -30,6 +38,9 @@ func (s *Service) CreateNewProject(ctx context.Context, p CreateProject) (*Proje
 }
 
 func (s *Service) UpdateProject(ctx context.Context, p UpdateProject) (*Project, error) {
+	if err := validator.Validate.Struct(p); err != nil {
+		return nil, fmt.Errorf("Validation failed: %w", err)
+	}
 	err := s.repo.Update(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to update project: %w", err)
@@ -38,6 +49,9 @@ func (s *Service) UpdateProject(ctx context.Context, p UpdateProject) (*Project,
 }
 
 func (s *Service) DeleteProject(ctx context.Context, p DeleteProject) error {
+	if err := validator.Validate.Struct(p); err != nil {
+		return fmt.Errorf("Validation failed: %w", err)
+	}
 	err := s.repo.Delete(ctx, p)
 	if err != nil {
 		return fmt.Errorf("Failed to delete project: %w", err)

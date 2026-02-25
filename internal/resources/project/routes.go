@@ -39,6 +39,10 @@ func (h *handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.service.CreateNewProject(r.Context(), req)
 	if err != nil {
+		if fields := response.MapValidationErrors(err); len(fields) > 0 {
+			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -60,6 +64,10 @@ func (h *handler) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.service.GetProjectByID(r.Context(), GetSingleProject{ID: id})
 	if err != nil {
+		if fields := response.MapValidationErrors(err); len(fields) > 0 {
+			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)
+			return
+		}
 		response.Error(w, http.StatusNotFound, "Project not found")
 		return
 	}
@@ -91,6 +99,10 @@ func (h *handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	project, err := h.service.UpdateProject(r.Context(), req)
 	if err != nil {
+		if fields := response.MapValidationErrors(err); len(fields) > 0 {
+			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -111,6 +123,10 @@ func (h *handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.DeleteProject(r.Context(), DeleteProject{ID: id})
 	if err != nil {
+		if fields := response.MapValidationErrors(err); len(fields) > 0 {
+			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)
+			return
+		}
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}

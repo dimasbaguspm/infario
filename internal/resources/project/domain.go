@@ -30,10 +30,10 @@ type GetSingleProject struct {
 // @Description Project creation DTO
 // @Name CreateProject
 type CreateProject struct {
-	Name          string `json:"name" validate:"required"`
-	GitURL        string `json:"git_url" validate:"required"`
-	GitProvider   string `json:"git_provider,omitempty"`
-	PrimaryBranch string `json:"primary_branch,omitempty"`
+	Name          string `json:"name" validate:"required,min=3,max=100"`
+	GitURL        string `json:"git_url" validate:"required,url"`
+	GitProvider   string `json:"git_provider,omitempty" validate:"required,oneof=github gitlab bitbucket"`
+	PrimaryBranch string `json:"primary_branch,omitempty" validate:"omitempty"`
 }
 
 // UpdateProject represents the payload for updating existing projects.
@@ -41,10 +41,10 @@ type CreateProject struct {
 // @Name UpdateProject
 type UpdateProject struct {
 	ID            string `json:"id" validate:"required"`
-	Name          string `json:"name,omitempty"`
-	GitURL        string `json:"git_url,omitempty"`
-	GitProvider   string `json:"git_provider,omitempty"`
-	PrimaryBranch string `json:"primary_branch,omitempty"`
+	Name          string `json:"name,omitempty" validate:"omitempty,min=3,max=100"`
+	GitURL        string `json:"git_url,omitempty" validate:"omitempty,url"`
+	GitProvider   string `json:"git_provider,omitempty" validate:"omitempty,oneof=github gitlab bitbucket"`
+	PrimaryBranch string `json:"primary_branch,omitempty" validate:"omitempty"`
 }
 
 // DeleteProject represents the payload for deleting a project.
