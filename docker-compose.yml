@@ -4,17 +4,33 @@ services:
       context: .
       dockerfile: Dockerfile
       target: dev
-    container_name: infario-dev
+    container_name: infario_dev
     ports:
       - "8080:8080"
     volumes:
       - .:/app
-      - /app/node_modules  # prevent overwriting node_modules if exists
     environment:
       - GO_ENV=development
     command: air -c .air.toml
 
+  postgres:
+    image: postgres:18.2-alpine
+    container_name: infario_db
+    environment:
+      POSTGRES_USER: infario_user
+      POSTGRES_PASSWORD: infario_password
+      POSTGRES_DB: infario
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-networks:
-  infario-network:
-    driver: bridge
+  redis:
+    image: redis:8.6.1-alpine
+    container_name: infario_cache
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+

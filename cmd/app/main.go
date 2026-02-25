@@ -2,17 +2,41 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/dimasbaguspm/infario/pkgs/config"
+	"github.com/dimasbaguspm/infario/pkgs/database"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	cfg := config.Load()
+	fmt.Printf("Loaded config: %+v\n", cfg)
+	db, err := database.NewPostgres(ctx, database.Config{
+		DSN:             cfg.DBDSN,
+		MaxOpenConns:    cfg.DBMaxOpenConns,
+		ConnMaxLifetime: cfg.DBConnLifetime,
+	})
+
+	if err != nil {
+		slog.Error("Could not connect to database", "Error", err)
+		os.Exit(1)
+	}
+
+	defer db.Close()
+
+	if err := database.RunMigrations(*cfg); err != nil {
+		slog.Error("Migration failed", "Error", err)
+		os.Exit(1)
+	}
 
 	svr := http.NewServeMux()
 
