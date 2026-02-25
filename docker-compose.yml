@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -15,8 +13,7 @@ services:
     environment:
       - GO_ENV=development
     command: air -c .air.toml
-    networks:
-      - infario-network
+
 
 networks:
   infario-network:
