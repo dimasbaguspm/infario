@@ -70,63 +70,51 @@ definitions:
   internal_resources_project.CreateProject:
     description: Project creation DTO
     properties:
-      git_provider:
-        enum:
-        - github
-        - gitlab
-        - bitbucket
-        type: string
-      git_url:
-        type: string
       name:
         maxLength: 100
         minLength: 3
         type: string
-      primary_branch:
-        type: string
     required:
-    - git_provider
-    - git_url
     - name
     type: object
   internal_resources_project.Project:
-    description: Project entity representing a code repository and its metadata
+    description: Project entity representing a project with its metadata
     properties:
       created_at:
         type: string
       deleted_at:
         type: string
-      git_provider:
-        type: string
-      git_url:
-        type: string
       id:
         type: string
       name:
         type: string
-      primary_branch:
-        type: string
       updated_at:
         type: string
+    type: object
+  internal_resources_project.ProjectPaged:
+    description: Offset-based paginated project response with metadata
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_resources_project.Project'
+        type: array
+      pageCount:
+        type: integer
+      pageNumber:
+        type: integer
+      pageSize:
+        type: integer
+      totalCount:
+        type: integer
     type: object
   internal_resources_project.UpdateProject:
     description: Project update DTO
     properties:
-      git_provider:
-        enum:
-        - github
-        - gitlab
-        - bitbucket
-        type: string
-      git_url:
-        type: string
       id:
         type: string
       name:
         maxLength: 100
         minLength: 3
-        type: string
-      primary_branch:
         type: string
     required:
     - id
@@ -237,6 +225,40 @@ paths:
       tags:
       - deployments
   /projects:
+    get:
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        name: pageNumber
+        type: integer
+      - default: 10
+        description: 'Page size (default: 10, max: 100)'
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_resources_project.ProjectPaged'
+        "400":
+          description: Invalid parameters
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+      summary: List projects
+      tags:
+      - projects
     post:
       consumes:
       - application/json
@@ -255,7 +277,11 @@ paths:
           schema:
             $ref: '#/definitions/internal_resources_project.Project'
         "400":
-          description: Bad Request
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
         "500":
@@ -278,6 +304,10 @@ paths:
           description: No Content
         "404":
           description: Project not found
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
         "500":
@@ -340,6 +370,10 @@ paths:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
         "404":
           description: Project not found
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
         "500":

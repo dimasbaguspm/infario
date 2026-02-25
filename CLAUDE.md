@@ -79,11 +79,12 @@ HTTP Request
 - `deployment/` - Deployment orchestration module (placeholder for future work)
 
 ### `/internal/resources/project/`
-**Complete project CRUD implementation**
+**Complete project CRUD implementation with offset-based pagination**
 
 - `domain.go` - DTOs and interfaces
-  - `Project` - Core entity
-  - `CreateProject`, `UpdateProject`, `DeleteProject`, `GetSingleProject` - Request DTOs
+  - `Project` - Core entity with id, name, created_at, updated_at, deleted_at
+  - `GetPagedProject`, `GetSingleProject`, `CreateProject`, `UpdateProject`, `DeleteProject` - Request DTOs
+  - `ProjectPaged` - Offset-based paginated response with items, totalCount, pageNumber, pageSize, pageCount
   - `ProjectRepository` interface - Data access contract
   - `ProjectService` interface - Business logic contract
 
@@ -91,14 +92,17 @@ HTTP Request
   - Validates all inputs using `validator.Validate`
   - Delegates CRUD to repository
   - Returns properly formatted domain objects
+  - `GetPagedProjects()` - List with offset-based pagination
 
 - `postgres.go` - PostgreSQL implementation
-  - SQL queries for Create, Read, Update, Delete
+  - SQL queries for GetPaged, Create, Read, Update, Delete
+  - Offset-based pagination using LIMIT/OFFSET
   - Soft deletes using `deleted_at` timestamp
   - Uses PostgreSQL `pgxpool` for connection pooling
 
 - `routes.go` - HTTP handlers
-  - `GET /projects/{id}` - Retrieve project
+  - `GET /projects` - List projects with offset-based pagination
+  - `GET /projects/{id}` - Retrieve project detail
   - `POST /projects` - Create project
   - `PATCH /projects/{id}` - Update project
   - `DELETE /projects/{id}` - Soft delete project
@@ -145,7 +149,7 @@ HTTP Request
 
 - `database/postgres.go`
   - `NewPostgres()` - Creates pgxpool with connection limits
-  - `RunMigrations()` - Executes SQL migrations on startup
+  - `RunMigrations()` - Discovers and executes SQL migrations from resource-specific directories on startup
 
 - `config/config.go`
   - Loads environment variables using `caarlos0/env`
@@ -171,10 +175,19 @@ HTTP Request
   - Custom tag name function: uses `json` tag instead of struct field names
 
 ### `/migrations/`
-**SQL schema definitions**
+**Resource-specific SQL schema definitions**
 
-- `000001_init_schema.up.sql` - Creates `projects` and `deployments` tables
-- `000001_init_schema.down.sql` - Rollback script
+Migrations are organized by resource in separate directories:
+
+- `project/`
+  - `001_init.up.sql` - Creates `projects` table
+  - `001_init.down.sql` - Rollback script
+
+- `deployment/`
+  - `001_init.up.sql` - Creates `deployments` table with foreign key to projects
+  - `001_init.down.sql` - Rollback script
+
+The `RunMigrations()` function in `pkgs/database/postgres.go` automatically discovers and executes migrations from all resource directories in order.
 
 ### `/docs/`
 **Auto-generated Swagger documentation**
@@ -190,13 +203,13 @@ HTTP Request
 CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
-    git_url VARCHAR(255) NOT NULL,
-    git_provider VARCHAR(20) NOT NULL DEFAULT 'github',
-    primary_branch VARCHAR(50) DEFAULT 'main',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE
 );
+
+CREATE INDEX idx_projects_created_at ON projects (created_at DESC);
+CREATE INDEX idx_projects_deleted_at ON projects (deleted_at);
 ```
 
 **Key Features:**
@@ -204,29 +217,36 @@ CREATE TABLE projects (
 - Soft deletes via `deleted_at` (queries always filter where `deleted_at IS NULL`)
 - Unique name constraint
 - Timestamps for audit trail
+- Indexes on `created_at` (for cursor-based pagination) and `deleted_at` (for filtering)
 
 ### `deployments` table
 ```sql
 CREATE TABLE deployments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'queued',
     commit_hash VARCHAR(40) NOT NULL,
-    status SMALLINT NOT NULL DEFAULT 0,  -- 0:Queued, 1:Building, 2:Ready, 3:Failed
-    preview_url VARCHAR(255) UNIQUE,
-    storage_key TEXT,
-    metadata_json JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    commit_message TEXT,
+    storage_path TEXT,
+    public_url VARCHAR(255) UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE INDEX idx_deployments_project_id ON deployments (project_id);
+CREATE INDEX idx_deployments_public_url ON deployments (public_url);
+CREATE INDEX idx_deployments_created_at ON deployments (created_at DESC);
 ```
 
 **Key Features:**
 - Foreign key to `projects` with CASCADE delete
-- Status machine: Queued → Building → Ready/Failed
-- Unique preview URL
-- JSONB for flexible git metadata
+- Status machine: Queued → Building → Ready → Failed
+- Unique public URL
+- Timestamps for audit trail
 - Indexes for performance:
-  - `idx_deployments_preview_url` - Fast lookup of ready deployments
-  - `idx_deployments_project_latest` - Get latest deployment per project
+  - `idx_deployments_project_id` - Fast lookup by project
+  - `idx_deployments_public_url` - Fast lookup by URL
+  - `idx_deployments_created_at` - Cursor-based pagination support
 
 ---
 
@@ -265,11 +285,18 @@ make restart
 ### Database Migrations
 ```bash
 # Migrations run automatically on server startup
-# Create new migration:
-touch migrations/000002_add_column.up.sql
-touch migrations/000002_add_column.down.sql
+# Create new migration in the appropriate resource directory:
+
+# For a new project feature:
+touch migrations/project/002_add_feature.up.sql
+touch migrations/project/002_add_feature.down.sql
+
+# For a new deployment feature:
+touch migrations/deployment/002_add_feature.up.sql
+touch migrations/deployment/002_add_feature.down.sql
 
 # Write SQL, restart server to apply
+# Migrations are executed in order by resource directory name
 ```
 
 ---
@@ -343,19 +370,22 @@ UPDATE projects SET deleted_at = NOW() WHERE id = $1
 
 ### Pagination Patterns
 
-**Offset-Based Pagination**
+**Offset-Based Pagination (Projects)**
 
-Use offset-based pagination for **stable datasets** or when total count is essential. Implemented via `request.ParsePaging()` and `response.Collection[T]`.
+Used for **stable, small datasets** when total page count is essential. Implemented in the projects resource via `request.ParsePaging()` and `response.Collection[T]`.
+
+**Resources:** Projects
 
 ```go
 // domain.go
-type GetSingleProject struct {
-    ProjectID string `json:"project_id" validate:"required"`
+type GetPagedProject struct {
     request.PagingParams  // Embeds PageNumber, PageSize, and Offset() method
 }
 
+type ProjectPaged response.Collection[*Project]
+
 // postgres.go - Use OFFSET for page-based queries
-func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedProject) (*response.Collection[*Project], error) {
+func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedProject) (*ProjectPaged, error) {
     offset := params.Offset()  // (PageNumber - 1) * PageSize
     query := `
         WITH projects_cte AS (
@@ -368,7 +398,57 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedProjec
         SELECT *, total_count FROM projects_cte
     `
     // ... scan results
-    return response.NewCollection(projects, totalCount, params.PageNumber, params.PageSize), nil
+    pageCount := (totalCount + int64(params.PageSize) - 1) / int64(params.PageSize)
+    return &ProjectPaged{Items: projects, TotalCount: totalCount, PageNumber: params.PageNumber, PageSize: params.PageSize, PageCount: pageCount}, nil
+}
+
+// routes.go - Parse pagination params using request.ParsePaging()
+params := GetPagedProject{PagingParams: request.ParsePaging(r)}
+```
+
+**Cursor-Based Pagination (Deployments)**
+
+Used for **large or frequently-updated datasets**. More efficient and resilient to concurrent data changes. Implemented in the deployments resource.
+
+**Resources:** Deployments
+
+```go
+// domain.go
+type GetPagedDeployment struct {
+    ProjectID string     `json:"project_id" validate:"required"`
+    Cursor    *time.Time `json:"cursor" validate:"omitempty"`
+    PageSize  int        `json:"page_size" validate:"required,min=1,max=100"`
+}
+
+type DeploymentCursor struct {
+    Items      []*Deployment `json:"items"`
+    TotalCount int64         `json:"totalCount"`
+    NextCursor *time.Time    `json:"nextCursor"`  // nil when no more items
+    PageSize   int           `json:"pageSize"`
+}
+
+// postgres.go - Use cursor for keyset pagination
+func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeployment) (*DeploymentCursor, error) {
+    query := `
+        WITH filtered_deployments AS (
+            SELECT *, COUNT(*) OVER () AS total_count
+            FROM deployments
+            WHERE project_id = $1 AND deleted_at IS NULL
+            AND (created_at < $2 OR $2::TIMESTAMP IS NULL)
+            ORDER BY created_at DESC
+            LIMIT $3
+        )
+        SELECT *, total_count FROM filtered_deployments
+    `
+    // ... determine nextCursor from last item
+}
+
+// routes.go - Parse cursor from query param
+cursor := &time.Time{}
+if cursorStr := r.URL.Query().Get("cursor"); cursorStr != "" {
+    if t, err := time.Parse(time.RFC3339, cursorStr); err == nil {
+        cursor = &t
+    }
 }
 ```
 
@@ -400,14 +480,18 @@ REDIS_URL=localhost:6379        # Redis for worker tasks (required)
 | Field | Rules | Example |
 |-------|-------|---------|
 | `name` | required, 3-100 chars | "My App" |
-| `git_url` | required, valid URL | "https://github.com/user/repo" |
-| `git_provider` | required, one of: github, gitlab, bitbucket | "github" |
-| `primary_branch` | optional | "main" (defaults to empty) |
 
 ### Project Update (`UpdateProject`)
-- All fields optional
-- Same validation rules apply when provided
+| Field | Rules | Required |
+|-------|-------|----------|
+| `name` | optional, 3-100 chars if provided | No |
 - Only non-zero values update the database
+
+### Project Listing (`GetPagedProject`)
+| Parameter | Rules | Default |
+|-----------|-------|---------|
+| `pageNumber` | optional, min 1 | 1 |
+| `pageSize` | optional, 1-100 | 10 |
 
 ### Validation Errors
 Error responses include field-level messages:

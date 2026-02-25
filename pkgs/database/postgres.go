@@ -56,23 +56,43 @@ func NewPostgres(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 }
 
 func RunMigrations(cfg config.Config) error {
-	migrator, err := migrate.New(fmt.Sprintf("file://%s", filepath.Clean("migrations")), cfg.DBDSN)
-
+	// Get all resource-specific migration directories
+	migrationsDir := filepath.Clean("migrations")
+	entries, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		slog.Error("Something wrong with migrator", "error", err)
-		os.Exit(1)
+		slog.Error("Failed to read migrations directory", "error", err)
 		return err
 	}
 
-	defer migrator.Close()
-
-	if err := migrator.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			slog.Info("Migration is done, no changed schemas are detected")
-			return nil
+	// Run migrations from each resource directory in order
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
 		}
-		slog.Error("Unable to run migration", "error", err)
-		return err
+
+		resourceDir := filepath.Join(migrationsDir, entry.Name())
+		slog.Info("Running migrations", "resource", entry.Name())
+
+		migrator, err := migrate.New(fmt.Sprintf("file://%s", filepath.Clean(resourceDir)), cfg.DBDSN)
+		if err != nil {
+			slog.Error("Failed to initialize migrator", "resource", entry.Name(), "error", err)
+			return err
+		}
+
+		if err := migrator.Up(); err != nil {
+			if errors.Is(err, migrate.ErrNoChange) {
+				slog.Info("No changes detected for resource", "resource", entry.Name())
+				migrator.Close()
+				continue
+			}
+			slog.Error("Migration failed for resource", "resource", entry.Name(), "error", err)
+			migrator.Close()
+			return err
+		}
+
+		migrator.Close()
+		slog.Info("Migration completed for resource", "resource", entry.Name())
 	}
+
 	return nil
 }

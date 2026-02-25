@@ -15,6 +15,17 @@ func NewService(repo ProjectRepository) *Service {
 	return &Service{repo: repo}
 }
 
+func (s *Service) GetPagedProjects(ctx context.Context, params GetPagedProject) (*ProjectPaged, error) {
+	if err := validator.Validate.Struct(params); err != nil {
+		return nil, fmt.Errorf("Validation failed: %w", err)
+	}
+	page, err := s.repo.GetPaged(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to list projects: %w", err)
+	}
+	return page, nil
+}
+
 func (s *Service) GetProjectByID(ctx context.Context, p GetSingleProject) (*Project, error) {
 	if err := validator.Validate.Struct(p); err != nil {
 		return nil, fmt.Errorf("Validation failed: %w", err)

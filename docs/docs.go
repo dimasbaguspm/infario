@@ -165,6 +165,57 @@ const docTemplate = `{
             }
         },
         "/projects": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List projects",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number (default: 1)",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size (default: 10, max: 100)",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_resources_project.ProjectPaged"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid parameters",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "consumes": [
                     "application/json"
@@ -195,7 +246,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
                         "schema": {
                             "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
                         }
@@ -272,6 +329,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
                         }
                     },
+                    "422": {
+                        "description": "Validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -324,6 +387,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
                         "schema": {
                             "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
                         }
@@ -440,34 +509,18 @@ const docTemplate = `{
             "description": "Project creation DTO",
             "type": "object",
             "required": [
-                "git_provider",
-                "git_url",
                 "name"
             ],
             "properties": {
-                "git_provider": {
-                    "type": "string",
-                    "enum": [
-                        "github",
-                        "gitlab",
-                        "bitbucket"
-                    ]
-                },
-                "git_url": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 3
-                },
-                "primary_branch": {
-                    "type": "string"
                 }
             }
         },
         "internal_resources_project.Project": {
-            "description": "Project entity representing a code repository and its metadata",
+            "description": "Project entity representing a project with its metadata",
             "type": "object",
             "properties": {
                 "created_at": {
@@ -476,23 +529,38 @@ const docTemplate = `{
                 "deleted_at": {
                     "type": "string"
                 },
-                "git_provider": {
-                    "type": "string"
-                },
-                "git_url": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "primary_branch": {
-                    "type": "string"
-                },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_resources_project.ProjectPaged": {
+            "description": "Offset-based paginated project response with metadata",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_resources_project.Project"
+                    }
+                },
+                "pageCount": {
+                    "type": "integer"
+                },
+                "pageNumber": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -503,17 +571,6 @@ const docTemplate = `{
                 "id"
             ],
             "properties": {
-                "git_provider": {
-                    "type": "string",
-                    "enum": [
-                        "github",
-                        "gitlab",
-                        "bitbucket"
-                    ]
-                },
-                "git_url": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -521,9 +578,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 3
-                },
-                "primary_branch": {
-                    "type": "string"
                 }
             }
         }
