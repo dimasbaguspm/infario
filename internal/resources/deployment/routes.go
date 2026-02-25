@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/dimasbaguspm/infario/pkgs/request"
@@ -16,6 +17,7 @@ func RegisterRoutes(mux *http.ServeMux, s Service) {
 
 	mux.HandleFunc("GET /deployments", h.handleGetPagedDeployments)
 	mux.HandleFunc("GET /deployments/{id}", h.handleGetDeployment)
+	mux.HandleFunc("POST /deployments", h.handleCreateDeployment)
 }
 
 // handleGetDeployment retrieves a deployment by its ID.
@@ -74,4 +76,39 @@ func (h *handler) handleGetPagedDeployments(w http.ResponseWriter, r *http.Reque
 	}
 
 	response.JSON(w, http.StatusOK, page)
+}
+
+// handleCreateDeployment creates a new deployment.
+// @Summary      Create a new deployment
+// @Tags         deployments
+// @Accept       json
+// @Produce      json
+// @Param request body CreateDeployment true "Deployment details"
+// @Success      201 {object} Deployment
+// @Failure      400 {object} response.ErrorResponse "Invalid request body"
+// @Failure      422 {object} response.ErrorResponse "Validation failed"
+// @Failure      500 {object} response.ErrorResponse "Internal Server Error"
+// @Router       /deployments [post]
+func (h *handler) handleCreateDeployment(w http.ResponseWriter, r *http.Request) {
+	var req CreateDeployment
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	deployment, err := h.service.CreateDeployment(r.Context(), CreateDeployment{
+		ProjectID:     req.ProjectID,
+		CommitHash:    req.CommitHash,
+		CommitMessage: req.CommitMessage,
+	})
+	if err != nil {
+		if fields := response.MapValidationErrors(err); len(fields) > 0 {
+			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusCreated, deployment)
 }

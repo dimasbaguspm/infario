@@ -15,6 +15,21 @@ definitions:
         description: HTTP Status Code
         type: integer
     type: object
+  internal_resources_deployment.CreateDeployment:
+    description: Deployment creation DTO
+    properties:
+      commit_hash:
+        type: string
+      commit_message:
+        type: string
+      project_id:
+        type: string
+      storage_path:
+        type: string
+    required:
+    - commit_hash
+    - project_id
+    type: object
   internal_resources_deployment.Deployment:
     description: Deployment entity representing a built and deployed version of a
       project
@@ -161,6 +176,38 @@ paths:
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: List deployments for a project
+      tags:
+      - deployments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Deployment details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resources_deployment.CreateDeployment'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_resources_deployment.Deployment'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+      summary: Create a new deployment
       tags:
       - deployments
   /deployments/{id}:

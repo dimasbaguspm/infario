@@ -73,6 +73,55 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "deployments"
+                ],
+                "summary": "Create a new deployment",
+                "parameters": [
+                    {
+                        "description": "Deployment details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_resources_deployment.CreateDeployment"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_resources_deployment.Deployment"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/deployments/{id}": {
@@ -308,6 +357,28 @@ const docTemplate = `{
                 "status": {
                     "description": "HTTP Status Code",
                     "type": "integer"
+                }
+            }
+        },
+        "internal_resources_deployment.CreateDeployment": {
+            "description": "Deployment creation DTO",
+            "type": "object",
+            "required": [
+                "commit_hash",
+                "project_id"
+            ],
+            "properties": {
+                "commit_hash": {
+                    "type": "string"
+                },
+                "commit_message": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "storage_path": {
+                    "type": "string"
                 }
             }
         },
