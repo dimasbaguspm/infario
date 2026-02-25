@@ -3,16 +3,22 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/dimasbaguspm/infario/internal/platform/worker"
 	"github.com/dimasbaguspm/infario/pkgs/validator"
 )
 
 type Service struct {
-	repo DeploymentRepository
+	repo       DeploymentRepository
+	workerPool *worker.DeploymentWorkerPool
 }
 
-func NewService(repo DeploymentRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo DeploymentRepository, workerPool *worker.DeploymentWorkerPool) *Service {
+	return &Service{
+		repo:       repo,
+		workerPool: workerPool,
+	}
 }
 
 func (s *Service) GetDeploymentByID(ctx context.Context, d GetSingleDeployment) (*Deployment, error) {
@@ -37,14 +43,47 @@ func (s *Service) GetPagedDeployments(ctx context.Context, params GetPagedDeploy
 	return page, nil
 }
 
-func (s *Service) CreateDeployment(ctx context.Context, d CreateDeployment) (*Deployment, error) {
+func (s *Service) Upload(ctx context.Context, d UploadDeployment) (*Deployment, error) {
 	if err := validator.Validate.Struct(d); err != nil {
 		return nil, fmt.Errorf("Validation failed: %w", err)
 	}
-	ID, err := s.repo.Create(ctx, d)
+
+	// 1. Open the uploaded file
+	file, err := d.File.Open()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create deployment: %w", err)
+		return nil, fmt.Errorf("Failed to open uploaded file: %w", err)
 	}
+
+	// 2. Create deployment record in database with "pending" status
+	ID, err := s.repo.Upload(ctx, d)
+	if err != nil {
+		file.Close()
+		return nil, fmt.Errorf("Failed to create deployment record: %w", err)
+	}
+
+	// 3. Enqueue async worker task to extract files and update status
+	task := worker.DeploymentTask{
+		ID:         ID,
+		ProjectID:  d.ProjectID,
+		Hash:       d.Hash,
+		FileReader: file,
+		OnComplete: func(status string, taskErr error) {
+			// Update deployment status asynchronously with timeout
+			updateCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			updateErr := s.repo.UpdateStatus(updateCtx, UpdateDeploymentStatus{
+				ID:     ID,
+				Status: status,
+			})
+			if updateErr != nil {
+				// Log but don't fail - deployment record exists with status info
+				fmt.Printf("failed to update deployment status: %v\n", updateErr)
+			}
+		},
+	}
+	s.workerPool.Enqueue(task)
+
 	return s.GetDeploymentByID(ctx, GetSingleDeployment{ID: ID})
 }
 
@@ -57,15 +96,4 @@ func (s *Service) UpdateDeploymentStatus(ctx context.Context, d UpdateDeployment
 		return nil, fmt.Errorf("Failed to update deployment status: %w", err)
 	}
 	return s.GetDeploymentByID(ctx, GetSingleDeployment{ID: d.ID})
-}
-
-func (s *Service) DeleteDeployment(ctx context.Context, d DeleteDeployment) error {
-	if err := validator.Validate.Struct(d); err != nil {
-		return fmt.Errorf("Validation failed: %w", err)
-	}
-	err := s.repo.Delete(ctx, d)
-	if err != nil {
-		return fmt.Errorf("Failed to delete deployment: %w", err)
-	}
-	return nil
 }

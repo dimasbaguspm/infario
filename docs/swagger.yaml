@@ -15,40 +15,23 @@ definitions:
         description: HTTP Status Code
         type: integer
     type: object
-  internal_resources_deployment.CreateDeployment:
-    description: Deployment creation DTO
-    properties:
-      commit_hash:
-        type: string
-      commit_message:
-        type: string
-      project_id:
-        type: string
-      storage_path:
-        type: string
-    required:
-    - commit_hash
-    - project_id
-    type: object
   internal_resources_deployment.Deployment:
-    description: Deployment entity representing a built and deployed version of a
-      project
+    description: Deployment entity representing a built artifact with content-addressable
+      identifier
     properties:
-      commit_hash:
-        type: string
-      commit_message:
-        type: string
       created_at:
+        type: string
+      expired_at:
+        description: 'Nullable: some builds may never expire'
+        type: string
+      hash:
+        description: The content-addressable identifier
         type: string
       id:
         type: string
       project_id:
         type: string
-      public_url:
-        type: string
       status:
-        type: string
-      updated_at:
         type: string
     type: object
   internal_resources_deployment.DeploymentPaged:
@@ -129,18 +112,13 @@ paths:
   /deployments:
     get:
       parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
       - default: 1
         description: 'Page number (default: 1)'
         in: query
         name: pageNumber
         type: integer
-      - default: 10
-        description: 'Page size (default: 10, max: 100)'
+      - default: 25
+        description: 'Page size (default: 25, max: 100)'
         in: query
         name: pageSize
         type: integer
@@ -163,39 +141,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
-      summary: List deployments for a project
-      tags:
-      - deployments
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Deployment details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/internal_resources_deployment.CreateDeployment'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/internal_resources_deployment.Deployment'
-        "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
-        "422":
-          description: Validation failed
-          schema:
-            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
-      summary: Create a new deployment
+      summary: List all deployments
       tags:
       - deployments
   /deployments/{id}:
@@ -222,6 +168,48 @@ paths:
           schema:
             $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: Get a deployment by ID
+      tags:
+      - deployments
+  /deployments/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Project ID
+        in: formData
+        name: project_id
+        required: true
+        type: string
+      - description: Content-addressable hash
+        in: formData
+        name: hash
+        required: true
+        type: string
+      - description: Binary file (zip or tar.gz)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_resources_deployment.Deployment'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "422":
+          description: Validation failed
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+      summary: Upload a deployment artifact
       tags:
       - deployments
   /projects:

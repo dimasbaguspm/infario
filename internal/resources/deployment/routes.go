@@ -1,7 +1,6 @@
 package deployment
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/dimasbaguspm/infario/pkgs/request"
@@ -17,7 +16,7 @@ func RegisterRoutes(mux *http.ServeMux, s Service) {
 
 	mux.HandleFunc("GET /deployments", h.handleGetPagedDeployments)
 	mux.HandleFunc("GET /deployments/{id}", h.handleGetDeployment)
-	mux.HandleFunc("POST /deployments", h.handleCreateDeployment)
+	mux.HandleFunc("POST /deployments/upload", h.handleUpload)
 }
 
 // handleGetDeployment retrieves a deployment by its ID.
@@ -45,23 +44,19 @@ func (h *handler) handleGetDeployment(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, deployment)
 }
 
-// handleGetPagedDeployments lists deployments for a project with pagination.
-// @Summary      List deployments for a project
+// handleGetPagedDeployments lists all deployments with pagination.
+// @Summary      List all deployments
 // @Tags         deployments
 // @Produce      json
-// @Param projectID path string true "Project ID"
 // @Param pageNumber query int false "Page number (default: 1)" default(1)
-// @Param pageSize query int false "Page size (default: 10, max: 100)" default(10)
+// @Param pageSize query int false "Page size (default: 25, max: 100)" default(25)
 // @Success      200 {object} DeploymentPaged
 // @Failure      400 {object} response.ErrorResponse "Invalid parameters"
 // @Failure      422 {object} response.ErrorResponse "Validation failed"
 // @Failure      500 {object} response.ErrorResponse "Internal Server Error"
 // @Router       /deployments [get]
 func (h *handler) handleGetPagedDeployments(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("projectID")
-
 	params := GetPagedDeployment{
-		ProjectID:    projectID,
 		PagingParams: request.ParsePaging(r),
 	}
 
@@ -78,29 +73,33 @@ func (h *handler) handleGetPagedDeployments(w http.ResponseWriter, r *http.Reque
 	response.JSON(w, http.StatusOK, page)
 }
 
-// handleCreateDeployment creates a new deployment.
-// @Summary      Create a new deployment
+// handleUpload uploads a deployment artifact (zip or tar.gz) with default 30-day TTL.
+// @Summary      Upload a deployment artifact
 // @Tags         deployments
-// @Accept       json
+// @Accept       mpfd
 // @Produce      json
-// @Param request body CreateDeployment true "Deployment details"
+// @Param project_id formData string true "Project ID"
+// @Param hash formData string true "Content-addressable hash"
+// @Param file formData file true "Binary file (zip or tar.gz)"
 // @Success      201 {object} Deployment
-// @Failure      400 {object} response.ErrorResponse "Invalid request body"
+// @Failure      400 {object} response.ErrorResponse "Invalid request"
 // @Failure      422 {object} response.ErrorResponse "Validation failed"
 // @Failure      500 {object} response.ErrorResponse "Internal Server Error"
-// @Router       /deployments [post]
-func (h *handler) handleCreateDeployment(w http.ResponseWriter, r *http.Request) {
-	var req CreateDeployment
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.Error(w, http.StatusBadRequest, "Invalid request body")
+// @Router       /deployments/upload [post]
+func (h *handler) handleUpload(w http.ResponseWriter, r *http.Request) {
+	upload, err := request.ParseFileUpload(r, 10<<20) // 10MB max
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "Invalid multipart form or missing file")
 		return
 	}
 
-	deployment, err := h.service.CreateDeployment(r.Context(), CreateDeployment{
-		ProjectID:     req.ProjectID,
-		CommitHash:    req.CommitHash,
-		CommitMessage: req.CommitMessage,
-	})
+	req := UploadDeployment{
+		ProjectID:  r.FormValue("project_id"),
+		Hash:       r.FormValue("hash"),
+		FileUpload: *upload,
+	}
+
+	deployment, err := h.service.Upload(r.Context(), req)
 	if err != nil {
 		if fields := response.MapValidationErrors(err); len(fields) > 0 {
 			response.Error(w, http.StatusUnprocessableEntity, "Validation failed", fields)

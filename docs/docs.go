@@ -23,15 +23,8 @@ const docTemplate = `{
                 "tags": [
                     "deployments"
                 ],
-                "summary": "List deployments for a project",
+                "summary": "List all deployments",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "default": 1,
@@ -41,8 +34,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "default": 10,
-                        "description": "Page size (default: 10, max: 100)",
+                        "default": 25,
+                        "description": "Page size (default: 25, max: 100)",
                         "name": "pageSize",
                         "in": "query"
                     }
@@ -73,10 +66,12 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/deployments/upload": {
             "post": {
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -84,16 +79,28 @@ const docTemplate = `{
                 "tags": [
                     "deployments"
                 ],
-                "summary": "Create a new deployment",
+                "summary": "Upload a deployment artifact",
                 "parameters": [
                     {
-                        "description": "Deployment details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_resources_deployment.CreateDeployment"
-                        }
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "project_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content-addressable hash",
+                        "name": "hash",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Binary file (zip or tar.gz)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -104,7 +111,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
                         }
@@ -429,39 +436,19 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_resources_deployment.CreateDeployment": {
-            "description": "Deployment creation DTO",
-            "type": "object",
-            "required": [
-                "commit_hash",
-                "project_id"
-            ],
-            "properties": {
-                "commit_hash": {
-                    "type": "string"
-                },
-                "commit_message": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "storage_path": {
-                    "type": "string"
-                }
-            }
-        },
         "internal_resources_deployment.Deployment": {
-            "description": "Deployment entity representing a built and deployed version of a project",
+            "description": "Deployment entity representing a built artifact with content-addressable identifier",
             "type": "object",
             "properties": {
-                "commit_hash": {
-                    "type": "string"
-                },
-                "commit_message": {
-                    "type": "string"
-                },
                 "created_at": {
+                    "type": "string"
+                },
+                "expired_at": {
+                    "description": "Nullable: some builds may never expire",
+                    "type": "string"
+                },
+                "hash": {
+                    "description": "The content-addressable identifier",
                     "type": "string"
                 },
                 "id": {
@@ -470,13 +457,7 @@ const docTemplate = `{
                 "project_id": {
                     "type": "string"
                 },
-                "public_url": {
-                    "type": "string"
-                },
                 "status": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }

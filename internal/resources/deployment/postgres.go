@@ -20,13 +20,10 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 		SELECT
 			id,
 			project_id,
+			hash,
 			status,
-			commit_hash,
-			commit_message,
-			storage_path,
-			public_url,
 			created_at,
-			updated_at
+			expired_at
 		FROM deployments
 		WHERE id = $1
 	`
@@ -35,13 +32,10 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 	err := r.db.QueryRow(ctx, query, d.ID).Scan(
 		&deployment.ID,
 		&deployment.ProjectID,
+		&deployment.Hash,
 		&deployment.Status,
-		&deployment.CommitHash,
-		&deployment.CommitMessage,
-		&deployment.StoragePath,
-		&deployment.PublicURL,
 		&deployment.CreatedAt,
-		&deployment.UpdatedAt,
+		&deployment.ExpiredAt,
 	)
 
 	if err != nil {
@@ -52,41 +46,34 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 }
 
 func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeployment) (*DeploymentPaged, error) {
-	offset := (params.PageNumber - 1) * params.PageSize
+	offset := params.Offset()
 
 	query := `
 		WITH deployments_cte AS (
 			SELECT
 				id,
 				project_id,
+				hash,
 				status,
-				commit_hash,
-				commit_message,
-				storage_path,
-				public_url,
 				created_at,
-				updated_at,
+				expired_at,
 				COUNT(*) OVER () AS total_count
 			FROM deployments
-			WHERE project_id = $1
 			ORDER BY created_at DESC
-			LIMIT $2 OFFSET $3
+			LIMIT $1 OFFSET $2
 		)
 		SELECT
 			id,
 			project_id,
+			hash,
 			status,
-			commit_hash,
-			commit_message,
-			storage_path,
-			public_url,
 			created_at,
-			updated_at,
+			expired_at,
 			total_count
 		FROM deployments_cte
 	`
 
-	rows, err := r.db.Query(ctx, query, params.ProjectID, params.PageSize, offset)
+	rows, err := r.db.Query(ctx, query, params.PageSize, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
@@ -100,13 +87,10 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 		err := rows.Scan(
 			&deployment.ID,
 			&deployment.ProjectID,
+			&deployment.Hash,
 			&deployment.Status,
-			&deployment.CommitHash,
-			&deployment.CommitMessage,
-			&deployment.StoragePath,
-			&deployment.PublicURL,
 			&deployment.CreatedAt,
-			&deployment.UpdatedAt,
+			&deployment.ExpiredAt,
 			&totalCount,
 		)
 		if err != nil {
@@ -131,25 +115,26 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 	}, nil
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, d CreateDeployment) (string, error) {
+func (r *PostgresRepository) Upload(ctx context.Context, d UploadDeployment) (string, error) {
 	var ID *string
 
-	query := `
-		INSERT INTO deployments (project_id, status, commit_hash, commit_message, storage_path)
-		VALUES ($1, $2, $3, $4, $5)
+	// Default TTL: 30 days from now
+	expiredAt := "NOW() + INTERVAL '30 days'"
+
+	query := fmt.Sprintf(`
+		INSERT INTO deployments (project_id, hash, status, expired_at)
+		VALUES ($1, $2, $3, %s)
 		RETURNING id
-	`
+	`, expiredAt)
 
 	err := r.db.QueryRow(ctx, query,
 		d.ProjectID,
-		StatusQueued,
-		d.CommitHash,
-		d.CommitMessage,
-		d.StoragePath,
+		d.Hash,
+		StatusPending,
 	).Scan(&ID)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to create deployment: %w", err)
+		return "", fmt.Errorf("failed to upload deployment: %w", err)
 	}
 
 	return *ID, nil
@@ -158,34 +143,13 @@ func (r *PostgresRepository) Create(ctx context.Context, d CreateDeployment) (st
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, d UpdateDeploymentStatus) error {
 	query := `
 		UPDATE deployments
-		SET status = $1,
-			public_url = COALESCE($2, public_url),
-			updated_at = NOW()
-		WHERE id = $3
+		SET status = $1
+		WHERE id = $2
 	`
 
-	_, err := r.db.Exec(ctx, query,
-		d.Status,
-		d.PublicURL,
-		d.ID,
-	)
-
+	_, err := r.db.Exec(ctx, query, d.Status, d.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update deployment status: %w", err)
-	}
-
-	return nil
-}
-
-func (r *PostgresRepository) Delete(ctx context.Context, d DeleteDeployment) error {
-	query := `
-		DELETE FROM deployments
-		WHERE id = $1
-	`
-
-	_, err := r.db.Exec(ctx, query, d.ID)
-	if err != nil {
-		return fmt.Errorf("failed to delete deployment: %w", err)
 	}
 
 	return nil

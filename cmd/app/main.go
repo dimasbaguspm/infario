@@ -10,6 +10,8 @@ import (
 	"time"
 
 	_ "github.com/dimasbaguspm/infario/docs" // Import generated docs
+	"github.com/dimasbaguspm/infario/internal/platform/engine"
+	"github.com/dimasbaguspm/infario/internal/platform/worker"
 	"github.com/dimasbaguspm/infario/internal/resources"
 	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/dimasbaguspm/infario/pkgs/database"
@@ -47,9 +49,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	fileEngine := engine.NewFileEngine("./storage")
+
+	deploymentWorkerPool := worker.NewDeploymentWorkerPool(fileEngine, 4)
+	deploymentWorkerPool.Start(ctx)
+
 	mux := http.NewServeMux()
 
-	resources.RegisterRoutes(mux, db)
+	resources.RegisterRoutes(mux, db, deploymentWorkerPool)
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusNotFound, "The requested resource was not found")
@@ -80,5 +87,12 @@ func main() {
 		slog.Error("Graceful shutdown failed, forcing exit", "err", err)
 	} else {
 		slog.Info("Server stopped")
+	}
+
+	slog.Info("Shutting down worker pool")
+	if err := deploymentWorkerPool.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Worker pool shutdown timeout", "err", err)
+	} else {
+		slog.Info("Worker pool stopped")
 	}
 }
