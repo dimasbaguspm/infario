@@ -12,6 +12,9 @@ services:
     environment:
       - GO_ENV=development
     command: air -c .air.toml
+    depends_on:
+      - postgres
+      - redis
 
   postgres:
     image: postgres:18.2-alpine

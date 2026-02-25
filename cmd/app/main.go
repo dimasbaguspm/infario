@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,7 +18,7 @@ func main() {
 	defer stop()
 
 	cfg := config.Load()
-	fmt.Printf("Loaded config: %+v\n", cfg)
+
 	db, err := database.NewPostgres(ctx, database.Config{
 		DSN:             cfg.DBDSN,
 		MaxOpenConns:    cfg.DBMaxOpenConns,
