@@ -20,6 +20,14 @@ func RegisterRoutes(mux *http.ServeMux, s Service) {
 	mux.HandleFunc("DELETE /projects/{id}", h.handleDeleteProject)
 }
 
+// handleCreateProject registers a new project.
+// @Summary      Create a project
+// @Tags         projects
+// @Accept       json
+// @Produce      json
+// @Param request body CreateProject true "Project Details"
+// @Success      201 {object} Project
+// @Router       /projects [post]
 func (h *handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	var req CreateProject
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -36,6 +44,13 @@ func (h *handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, project)
 }
 
+// handleProjectByID retrieves a project by its ID.
+// @Summary      Get a project by ID
+// @Tags         projects
+// @Produce      json
+// @Param id path string true "Project ID"
+// @Success      200 {object} Project
+// @Router       /projects/{id} [get]
 func (h *handler) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -48,6 +63,15 @@ func (h *handler) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, project)
 }
 
+// handleUpdateProject updates an existing project.
+// @Summary      Update a project
+// @Tags         projects
+// @Accept       json
+// @Produce      json
+// @Param id path string true "Project ID"
+// @Param request body UpdateProject true "Updated Project Details"
+// @Success      200 {object} Project
+// @Router       /projects/{id} [patch]
 func (h *handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -67,6 +91,12 @@ func (h *handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, project)
 }
 
+// handleDeleteProject deletes a project by its ID.
+// @Summary      Delete a project
+// @Tags         projects
+// @Param id path string true "Project ID"
+// @Success      204 "No Content"
+// @Router       /projects/{id} [delete]
 func (h *handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 

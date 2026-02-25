@@ -9,12 +9,20 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/dimasbaguspm/infario/docs" // Import generated docs
 	"github.com/dimasbaguspm/infario/internal/resources"
 	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/dimasbaguspm/infario/pkgs/database"
 	"github.com/dimasbaguspm/infario/pkgs/response"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title           Infario API
+// @version         1.0
+// @description     The core API for the Infario Cloud Platform.
+// @host            localhost:8080
+// @BasePath        /
+// @schemes         http https
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -42,6 +50,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	resources.RegisterRoutes(mux, db)
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusNotFound, "The requested resource was not found")
 	})

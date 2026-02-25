@@ -1,0 +1,141 @@
+basePath: /
+definitions:
+  internal_resources_project.CreateProject:
+    description: Project creation DTO
+    properties:
+      git_provider:
+        type: string
+      git_url:
+        type: string
+      name:
+        type: string
+      primary_branch:
+        type: string
+    required:
+    - git_url
+    - name
+    type: object
+  internal_resources_project.Project:
+    description: Project entity representing a code repository and its metadata
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      git_provider:
+        type: string
+      git_url:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      primary_branch:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_resources_project.UpdateProject:
+    description: Project update DTO
+    properties:
+      git_provider:
+        type: string
+      git_url:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      primary_branch:
+        type: string
+    required:
+    - id
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: The core API for the Infario Cloud Platform.
+  title: Infario API
+  version: "1.0"
+paths:
+  /projects:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resources_project.CreateProject'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_resources_project.Project'
+      summary: Create a project
+      tags:
+      - projects
+  /projects/{id}:
+    delete:
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a project
+      tags:
+      - projects
+    get:
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_resources_project.Project'
+      summary: Get a project by ID
+      tags:
+      - projects
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated Project Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resources_project.UpdateProject'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_resources_project.Project'
+      summary: Update a project
+      tags:
+      - projects
+schemes:
+- http
+- https
+swagger: "2.0"

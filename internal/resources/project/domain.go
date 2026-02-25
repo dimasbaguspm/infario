@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// Project represents a project entity in the system.
+// @Description Project entity representing a code repository and its metadata
+// @Name Project
 type Project struct {
 	ID            string     `json:"id"`
 	Name          string     `json:"name"`
@@ -16,10 +19,16 @@ type Project struct {
 	DeletdAt      *time.Time `json:"deleted_at,omitempty"`
 }
 
+// GetSingleProject represents the payload for retrieving a project by ID.
+// @Description Payload for fetching a project by its ID
+// @Name GetSingleProject
 type GetSingleProject struct {
 	ID string `json:"id" validate:"required"`
 }
 
+// CreateProject represents the payload for new projects.
+// @Description Project creation DTO
+// @Name CreateProject
 type CreateProject struct {
 	Name          string `json:"name" validate:"required"`
 	GitURL        string `json:"git_url" validate:"required"`
@@ -27,6 +36,9 @@ type CreateProject struct {
 	PrimaryBranch string `json:"primary_branch,omitempty"`
 }
 
+// UpdateProject represents the payload for updating existing projects.
+// @Description Project update DTO
+// @Name UpdateProject
 type UpdateProject struct {
 	ID            string `json:"id" validate:"required"`
 	Name          string `json:"name,omitempty"`
@@ -35,6 +47,9 @@ type UpdateProject struct {
 	PrimaryBranch string `json:"primary_branch,omitempty"`
 }
 
+// DeleteProject represents the payload for deleting a project.
+// @Description Project deletion DTO
+// @Name DeleteProject
 type DeleteProject struct {
 	ID string `json:"id" validate:"required"`
 }
