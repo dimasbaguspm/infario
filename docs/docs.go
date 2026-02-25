@@ -44,6 +44,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/internal_resources_project.Project"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -72,6 +84,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/internal_resources_project.Project"
                         }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -92,6 +116,18 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -130,12 +166,51 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/internal_resources_project.Project"
                         }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Project not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse": {
+            "description": "Standard API error response",
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "description": "Detailed field errors",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "description": "Human readable summary",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "HTTP Status Code",
+                    "type": "integer"
+                }
+            }
+        },
         "internal_resources_project.CreateProject": {
             "description": "Project creation DTO",
             "type": "object",

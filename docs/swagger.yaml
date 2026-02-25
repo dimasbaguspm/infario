@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse:
+    description: Standard API error response
+    properties:
+      errors:
+        additionalProperties:
+          type: string
+        description: Detailed field errors
+        type: object
+      message:
+        description: Human readable summary
+        type: string
+      status:
+        description: HTTP Status Code
+        type: integer
+    type: object
   internal_resources_project.CreateProject:
     description: Project creation DTO
     properties:
@@ -76,6 +91,14 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/internal_resources_project.Project'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: Create a project
       tags:
       - projects
@@ -90,6 +113,14 @@ paths:
       responses:
         "204":
           description: No Content
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: Delete a project
       tags:
       - projects
@@ -107,6 +138,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/internal_resources_project.Project'
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: Get a project by ID
       tags:
       - projects
@@ -132,6 +171,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/internal_resources_project.Project'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_dimasbaguspm_infario_pkgs_response.ErrorResponse'
       summary: Update a project
       tags:
       - projects

@@ -27,6 +27,8 @@ func RegisterRoutes(mux *http.ServeMux, s Service) {
 // @Produce      json
 // @Param request body CreateProject true "Project Details"
 // @Success      201 {object} Project
+// @Failure      400 {object} response.ErrorResponse "Bad Request"
+// @Failure      500 {object} response.ErrorResponse "Internal Server Error"
 // @Router       /projects [post]
 func (h *handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	var req CreateProject
@@ -50,6 +52,8 @@ func (h *handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param id path string true "Project ID"
 // @Success      200 {object} Project
+// @Failure      404 {object} response.ErrorResponse "Project not found"
+// @Failure      500 {object} response.ErrorResponse "Internal Server Error"
 // @Router       /projects/{id} [get]
 func (h *handler) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
@@ -71,6 +75,9 @@ func (h *handler) handleProjectByID(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "Project ID"
 // @Param request body UpdateProject true "Updated Project Details"
 // @Success      200 {object} Project
+// @Failure      400 {object} response.ErrorResponse "Invalid request body"
+// @Failure      404 {object} response.ErrorResponse "Project not found"
+// @Failure      500 {object} response.ErrorResponse "Internal Server Error"
 // @Router       /projects/{id} [patch]
 func (h *handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
@@ -96,6 +103,8 @@ func (h *handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Tags         projects
 // @Param id path string true "Project ID"
 // @Success      204 "No Content"
+// @Failure      404 {object} response.ErrorResponse "Project not found"
+// @Failure      500 {object} response.ErrorResponse "Internal Server Error"
 // @Router       /projects/{id} [delete]
 func (h *handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
