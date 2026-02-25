@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dimasbaguspm/infario/internal/project"
+	"github.com/dimasbaguspm/infario/internal/resources"
 	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/dimasbaguspm/infario/pkgs/database"
 	"github.com/dimasbaguspm/infario/pkgs/response"
@@ -41,8 +41,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	project.Init(mux, db)
-
+	resources.RegisterRoutes(mux, db)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusNotFound, "The requested resource was not found")
 	})
