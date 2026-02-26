@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -21,11 +23,12 @@ func NewFileEngine(baseDir string) *FileEngine {
 	return &FileEngine{BaseDir: baseDir}
 }
 
-// Store extracts zip content into the given path with content-addressable deduplication.
-// path should be relative to BaseDir (e.g., "deployments/project-id/hash").
+// Store extracts archive content (zip or tar.gz) into the given path with content-addressable deduplication.
+// path should be relative to BaseDir (e.g., "deployments/project-id/hash/filename.tar.gz").
+// Automatically detects format from filename extension.
 // Returns true if extraction happened, false if path already exists (deduplication).
 // Uses atomic rename to ensure consistency on failure.
-func (e *FileEngine) Store(ctx context.Context, path string, zipData io.Reader) (bool, error) {
+func (e *FileEngine) Store(ctx context.Context, path string, archiveData io.Reader) (bool, error) {
 	finalPath := filepath.Join(e.BaseDir, path)
 	tmpPath := filepath.Join(e.BaseDir, path+"_tmp")
 
@@ -42,10 +45,18 @@ func (e *FileEngine) Store(ctx context.Context, path string, zipData io.Reader) 
 	// Cleanup any failed previous attempts
 	_ = os.RemoveAll(tmpPath)
 
-	// 3. Extract to Temporary Folder
-	if err := e.unzip(zipData, tmpPath); err != nil {
-		_ = os.RemoveAll(tmpPath)
-		return false, fmt.Errorf("extraction failed: %w", err)
+	// 3. Extract to Temporary Folder (detect format from filename)
+	destDir := tmpPath
+	if strings.HasSuffix(path, ".tar.gz") || strings.HasSuffix(path, ".tgz") {
+		if err := e.extractTarGz(archiveData, destDir); err != nil {
+			_ = os.RemoveAll(tmpPath)
+			return false, fmt.Errorf("tar.gz extraction failed: %w", err)
+		}
+	} else {
+		if err := e.unzip(archiveData, destDir); err != nil {
+			_ = os.RemoveAll(tmpPath)
+			return false, fmt.Errorf("zip extraction failed: %w", err)
+		}
 	}
 
 	// 4. Atomic Rename (The "Commit")
@@ -62,6 +73,55 @@ func (e *FileEngine) Store(ctx context.Context, path string, zipData io.Reader) 
 func (e *FileEngine) Remove(ctx context.Context, path string) error {
 	fullPath := filepath.Join(e.BaseDir, path)
 	return os.RemoveAll(fullPath)
+}
+
+// extractTarGz safely extracts tar.gz content to destination directory with ZIP SLIP protection.
+func (e *FileEngine) extractTarGz(src io.Reader, dest string) error {
+	gzr, err := gzip.NewReader(src)
+	if err != nil {
+		return fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read tar entry: %w", err)
+		}
+
+		// ZIP SLIP protection: ensure file path is within destination
+		path := filepath.Join(dest, header.Name)
+		if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", header.Name)
+		}
+
+		if header.Typeflag == tar.TypeDir {
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return fmt.Errorf("failed to create directory: %w", err)
+			}
+		} else {
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return fmt.Errorf("failed to create parent directory: %w", err)
+			}
+
+			file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+			if err != nil {
+				return fmt.Errorf("failed to create file: %w", err)
+			}
+
+			if _, err := io.Copy(file, tr); err != nil {
+				file.Close()
+				return fmt.Errorf("failed to write file: %w", err)
+			}
+			file.Close()
+		}
+	}
+
+	return nil
 }
 
 // unzip safely extracts zip content to destination directory.

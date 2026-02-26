@@ -13,6 +13,9 @@ const (
 	StatusReady   = "ready"
 	StatusError   = "error"
 	StatusExpired = "expired"
+
+	// Redis queue key for deployment tasks
+	QueueKey = "deployments"
 )
 
 // Deployment represents a single immutable build artifact.
@@ -20,12 +23,13 @@ const (
 // @Description Deployment entity representing a built artifact with content-addressable identifier
 // @Name Deployment
 type Deployment struct {
-	ID        string     `json:"id"`
-	ProjectID string     `json:"project_id"`
-	Hash      string     `json:"hash"` // The content-addressable identifier
-	Status    string     `json:"status"`
-	CreatedAt time.Time  `json:"created_at"`
-	ExpiredAt *time.Time `json:"expired_at,omitempty"` // Nullable: some builds may never expire
+	ID            string     `json:"id"`
+	ProjectID     string     `json:"project_id"`
+	Hash          string     `json:"hash"` // The content-addressable identifier
+	Status        string     `json:"status"`
+	CreatedAt     time.Time  `json:"created_at"`
+	ExpiredAt     *time.Time `json:"expired_at,omitempty"` // Nullable: some builds may never expire
+	ProjectName   *string    `json:"project_name,omitempty"`
 }
 
 // GetSingleDeployment represents the payload for retrieving a deployment by ID.
@@ -36,10 +40,12 @@ type GetSingleDeployment struct {
 }
 
 // GetPagedDeployment represents pagination parameters for listing deployments.
-// @Description Pagination parameters for listing deployments
+// @Description Pagination parameters for listing deployments with optional filters
 // @Name GetPagedDeployment
 type GetPagedDeployment struct {
 	request.PagingParams
+	ProjectID *string `json:"project_id" validate:"omitempty,uuid4"`
+	Status    *string `json:"status" validate:"omitempty,oneof=pending ready error expired"`
 }
 
 // DeploymentPaged represents a paginated response of deployments.

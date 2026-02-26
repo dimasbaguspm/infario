@@ -48,19 +48,24 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeployment) (*DeploymentPaged, error) {
 	offset := params.Offset()
 
+	// Always join with projects table to include project_name
 	query := `
 		WITH deployments_cte AS (
 			SELECT
-				id,
-				project_id,
-				hash,
-				status,
-				created_at,
-				expired_at,
+				d.id,
+				d.project_id,
+				d.hash,
+				d.status,
+				d.created_at,
+				d.expired_at,
+				p.name AS project_name,
 				COUNT(*) OVER () AS total_count
-			FROM deployments
-			ORDER BY created_at DESC
-			LIMIT $1 OFFSET $2
+			FROM deployments d
+			LEFT JOIN projects p ON p.id = d.project_id
+			WHERE ($1::uuid IS NULL OR d.project_id = $1::uuid)
+			AND ($2::text IS NULL OR d.status = $2)
+			ORDER BY d.created_at DESC
+			LIMIT $3 OFFSET $4
 		)
 		SELECT
 			id,
@@ -69,11 +74,12 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 			status,
 			created_at,
 			expired_at,
+			project_name,
 			total_count
 		FROM deployments_cte
 	`
 
-	rows, err := r.db.Query(ctx, query, params.PageSize, offset)
+	rows, err := r.db.Query(ctx, query, params.ProjectID, params.Status, params.PageSize, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
@@ -84,6 +90,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 
 	for rows.Next() {
 		deployment := &Deployment{}
+		var projectName *string
 		err := rows.Scan(
 			&deployment.ID,
 			&deployment.ProjectID,
@@ -91,11 +98,13 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 			&deployment.Status,
 			&deployment.CreatedAt,
 			&deployment.ExpiredAt,
+			&projectName,
 			&totalCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan deployment row: %w", err)
 		}
+		deployment.ProjectName = projectName
 		deployments = append(deployments, deployment)
 	}
 
@@ -200,3 +209,4 @@ func (r *PostgresRepository) GetExpired(ctx context.Context) ([]Deployment, erro
 
 	return deployments, nil
 }
+
