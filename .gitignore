@@ -45,3 +45,4 @@ dist/
 go.sum
 
 storage
+traefik

@@ -16,6 +16,8 @@ type Config struct {
 	DBConnLifetime time.Duration `env:"DB_CONN_LIFETIME" envDefault:"5m"`
 
 	RedisURL string `env:"REDIS_URL,required"`
+
+	TraefikDomain string `env:"TRAEFIK_DOMAIN" envDefault:"infario.site"`
 }
 
 func Load() *Config {
