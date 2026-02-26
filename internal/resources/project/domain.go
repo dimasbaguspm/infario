@@ -23,7 +23,7 @@ type Project struct {
 // @Description Payload for fetching a project by its ID
 // @Name GetSingleProject
 type GetSingleProject struct {
-	ID string `json:"id" validate:"required"`
+	ID string `json:"id" validate:"required,uuid4"`
 }
 
 // GetPagedProject represents pagination parameters for listing projects.
@@ -49,7 +49,7 @@ type CreateProject struct {
 // @Description Project update DTO
 // @Name UpdateProject
 type UpdateProject struct {
-	ID   string `json:"id" validate:"required"`
+	ID   string `json:"id" validate:"required,uuid4"`
 	Name string `json:"name,omitempty" validate:"omitempty,min=3,max=100"`
 }
 

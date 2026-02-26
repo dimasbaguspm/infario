@@ -32,7 +32,7 @@ type Deployment struct {
 // @Description Payload for fetching a deployment by its ID
 // @Name GetSingleDeployment
 type GetSingleDeployment struct {
-	ID string `json:"id" validate:"required"`
+	ID string `json:"id" validate:"required,uuid4"`
 }
 
 // GetPagedDeployment represents pagination parameters for listing deployments.
@@ -51,7 +51,7 @@ type DeploymentPaged response.Collection[*Deployment]
 // @Description Deployment upload DTO (zip or tar.gz with default 30-day TTL)
 // @Name UploadDeployment
 type UploadDeployment struct {
-	ProjectID string `json:"project_id" validate:"required"`
+	ProjectID string `json:"project_id" validate:"required,uuid4"`
 	Hash      string `json:"hash" validate:"required"` // Content-addressable identifier
 	request.FileUpload
 }

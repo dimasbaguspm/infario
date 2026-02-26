@@ -53,6 +53,8 @@ func MapValidationErrors(err error) map[string]string {
 
 func msgForTag(tag string, param string) string {
 	switch tag {
+	case "uuid4":
+		return "Must be a valid UUIDv4"
 	case "required":
 		return "This field is required"
 	case "url":
