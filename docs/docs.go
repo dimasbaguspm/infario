@@ -457,6 +457,9 @@ const docTemplate = `{
                 "project_id": {
                     "type": "string"
                 },
+                "project_name": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 }

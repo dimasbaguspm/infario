@@ -11,10 +11,10 @@ import (
 
 	_ "github.com/dimasbaguspm/infario/docs" // Import generated docs
 	"github.com/dimasbaguspm/infario/internal/platform/engine"
-	"github.com/dimasbaguspm/infario/internal/platform/worker"
 	"github.com/dimasbaguspm/infario/internal/resources"
 	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/dimasbaguspm/infario/pkgs/database"
+	"github.com/dimasbaguspm/infario/pkgs/redis"
 	"github.com/dimasbaguspm/infario/pkgs/response"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -49,15 +49,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	fileEngine := engine.NewFileEngine("./storage")
+	redisClient, err := redis.NewClient(ctx, cfg.RedisURL)
+	if err != nil {
+		slog.Error("Could not connect to Redis", "Error", err)
+		os.Exit(1)
+	}
+	defer redisClient.Close()
 
-	deploymentWorkerPool := worker.NewDeploymentWorkerPool(fileEngine, 4)
-	deploymentWorkerPool.Start(ctx)
+	fileEngine := engine.NewFileEngine("./storage")
 
 	mux := http.NewServeMux()
 
-	resources.InitHttps(mux, db, deploymentWorkerPool)
-	resources.InitWorkers(ctx, db, fileEngine)
+	// Initialize background workers (consumers that drain from Redis)
+	resources.InitWorkers(ctx, db, fileEngine, cfg, redisClient)
+
+	// Initialize HTTP routes (service emits directly to Redis)
+	resources.InitHttps(mux, db, redisClient, fileEngine)
 
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -91,10 +98,5 @@ func main() {
 		slog.Info("Server stopped")
 	}
 
-	slog.Info("Shutting down worker pool")
-	if err := deploymentWorkerPool.Shutdown(shutdownCtx); err != nil {
-		slog.Error("Worker pool shutdown timeout", "err", err)
-	} else {
-		slog.Info("Worker pool stopped")
-	}
+	slog.Info("Background workers shut down via context cancellation")
 }
