@@ -26,7 +26,7 @@ func StartExpiryCleanup(
 	ctx context.Context,
 	db *pgxpool.Pool,
 	fileEngine *engine.FileEngine,
-	tg *gateway.TraefikGateway,
+	tg *gateway.NginxGateway,
 	logger *slog.Logger,
 ) {
 	repo := deployment.NewPostgresRepository(db)
@@ -78,11 +78,13 @@ func StartExpiryCleanup(
 					if rd.ProjectName != nil {
 						projectName = *rd.ProjectName
 					}
+					entryPath := rd.EntryPath
 					deps[i] = gateway.GatewayDeployment{
 						ID:          rd.ID,
 						Hash:        rd.Hash,
 						ProjectID:   rd.ProjectID,
 						ProjectName: projectName,
+						EntryPath:   &entryPath,
 					}
 				}
 				if readyDeps.Items[0].ProjectName != nil {

@@ -3,11 +3,13 @@ package workers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/dimasbaguspm/infario/internal/gateway"
+	"github.com/dimasbaguspm/infario/internal/platform/engine"
 	"github.com/dimasbaguspm/infario/internal/resources/deployment"
 	"github.com/dimasbaguspm/infario/pkgs/request"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,8 +25,9 @@ const (
 func StartDeploymentConsumer(
 	ctx context.Context,
 	db *pgxpool.Pool,
-	tg *gateway.TraefikGateway,
+	tg *gateway.NginxGateway,
 	redisClient *redis.Client,
+	fileEngine *engine.FileEngine,
 	logger *slog.Logger,
 ) {
 	go func() {
@@ -39,68 +42,61 @@ func StartDeploymentConsumer(
 		var wg sync.WaitGroup
 
 		for {
-		select {
-		case <-ctx.Done():
-			if logger != nil {
-				logger.InfoContext(ctx, "deployment consumer shutting down, waiting for pending jobs")
+			select {
+			case <-ctx.Done():
+				if logger != nil {
+					logger.InfoContext(ctx, "deployment consumer shutting down, waiting for pending jobs")
+				}
+				// Wait for all pending jobs to complete
+				wg.Wait()
+				return
+			default:
 			}
-			// Wait for all pending jobs to complete
-			wg.Wait()
-			return
-		default:
-		}
 
-		result, err := redisClient.BLPop(ctx, 1*time.Second, deployment.QueueKey).Result()
-		if err != nil {
-			if err == redis.Nil {
+			result, err := redisClient.BLPop(ctx, 1*time.Second, deployment.QueueKey).Result()
+			if err != nil {
+				if err == redis.Nil {
+					continue
+				}
+				if logger != nil {
+					logger.ErrorContext(ctx, "failed to pop from queue", "error", err)
+				}
 				continue
 			}
-			if logger != nil {
-				logger.ErrorContext(ctx, "failed to pop from queue", "error", err)
+
+			if len(result) < 2 {
+				continue
 			}
-			continue
-		}
 
-		if len(result) < 2 {
-			continue
-		}
+			taskData := result[1]
 
-		taskData := result[1]
-
-		// Unmarshal task
-		var task struct {
-			ID        string `json:"id"`
-			ProjectID string `json:"project_id"`
-			Hash      string `json:"hash"`
-		}
-		err = json.Unmarshal([]byte(taskData), &task)
-		if err != nil {
-			if logger != nil {
-				logger.ErrorContext(ctx, "failed to unmarshal task", "error", err)
+			// Unmarshal task into DeploymentTask (embeds Deployment)
+			var task deployment.DeploymentTask
+			err = json.Unmarshal([]byte(taskData), &task)
+			if err != nil {
+				if logger != nil {
+					logger.ErrorContext(ctx, "failed to unmarshal task", "error", err)
+				}
+				continue
 			}
-			continue
-		}
 
-		// Acquire semaphore slot (blocking if all workers are busy)
-		sem <- struct{}{}
-		wg.Add(1)
+			// Acquire semaphore slot (blocking if all workers are busy)
+			sem <- struct{}{}
+			wg.Add(1)
 
-		// Process task in goroutine
-		go processDeploymentTask(ctx, &task, repo, tg, sem, &wg, logger)
+			// Process task in goroutine
+			go processDeploymentTask(ctx, &task, repo, tg, fileEngine, sem, &wg, logger)
 		}
 	}()
 }
 
-// processDeploymentTask handles a single deployment task and removes it from queue only after completion.
+// processDeploymentTask validates extracted deployment files and regenerates Traefik config.
 func processDeploymentTask(
 	ctx context.Context,
-	task *struct {
-		ID        string `json:"id"`
-		ProjectID string `json:"project_id"`
-		Hash      string `json:"hash"`
-	},
+	task *deployment.DeploymentTask,
 	repo deployment.DeploymentRepository,
-	tg *gateway.TraefikGateway,
+	tg *gateway.NginxGateway,
+	fileEngine *engine.FileEngine,
 	sem chan struct{},
 	wg *sync.WaitGroup,
 	logger *slog.Logger,
@@ -108,21 +104,60 @@ func processDeploymentTask(
 	defer wg.Done()
 	defer func() { <-sem }() // Release semaphore slot
 
-	id := task.ID
-	projectID := task.ProjectID
-	hash := task.Hash
+	// Fetch the full Deployment record from DB
+	dep, err := repo.GetByID(ctx, deployment.GetSingleDeployment{ID: task.Deployment.ID})
+	if err != nil {
+		if logger != nil {
+			logger.ErrorContext(ctx, "failed to fetch deployment", "id", task.Deployment.ID, "error", err)
+		}
+		return
+	}
 
 	if logger != nil {
-		logger.InfoContext(ctx, "processing deployment task", "deployment_id", id, "hash", hash)
+		logger.InfoContext(ctx, "processing deployment task", "deployment_id", dep.ID, "entry_path", dep.EntryPath)
+	}
+
+	// Define deployment directory where files were extracted
+	deploymentDir := "deployments/" + dep.ProjectID + "/" + dep.ID
+
+	// Validate that entry_path was provided at upload time
+	if dep.EntryPath == "" {
+		if logger != nil {
+			logger.ErrorContext(ctx, "entry_path is required but was not provided at upload", "id", dep.ID)
+		}
+		if err := repo.UpdateStatus(ctx, deployment.UpdateDeploymentStatus{
+			ID:     dep.ID,
+			Status: deployment.StatusError,
+		}); err != nil && logger != nil {
+			logger.ErrorContext(ctx, "failed to update deployment status to error", "id", dep.ID, "error", err)
+		}
+		return
+	}
+
+	// Verify that entry_path exists within the extracted files
+	// entry_path can be a file (e.g., "/index.html") or directory (e.g., "/app")
+	entryPathFull := deploymentDir + dep.EntryPath
+	fmt.Printf("Validating entry_path for deployment %s: checking existence of %s\n", dep.ID, entryPathFull)
+	if !fileEngine.Exists(ctx, entryPathFull) {
+		if logger != nil {
+			logger.ErrorContext(ctx, "entry_path not found in extracted archive", "id", dep.ID, "entry_path", dep.EntryPath, "full_path", entryPathFull)
+		}
+		if err := repo.UpdateStatus(ctx, deployment.UpdateDeploymentStatus{
+			ID:     dep.ID,
+			Status: deployment.StatusError,
+		}); err != nil && logger != nil {
+			logger.ErrorContext(ctx, "failed to update deployment status to error", "id", dep.ID, "error", err)
+		}
+		return
 	}
 
 	// Update status to "ready"
 	if err := repo.UpdateStatus(ctx, deployment.UpdateDeploymentStatus{
-		ID:     id,
+		ID:     dep.ID,
 		Status: deployment.StatusReady,
 	}); err != nil {
 		if logger != nil {
-			logger.ErrorContext(ctx, "failed to update deployment status", "id", id, "error", err)
+			logger.ErrorContext(ctx, "failed to update deployment status", "id", dep.ID, "error", err)
 		}
 		return
 	}
@@ -132,7 +167,7 @@ func processDeploymentTask(
 		status := deployment.StatusReady
 		readyDeps, err := repo.GetPaged(ctx, deployment.GetPagedDeployment{
 			PagingParams: request.PagingParams{PageNumber: 1, PageSize: 100},
-			ProjectID:    &projectID,
+			ProjectID:    &dep.ProjectID,
 			Status:       &status,
 		})
 		if err == nil && len(readyDeps.Items) > 0 {
@@ -142,15 +177,17 @@ func processDeploymentTask(
 				if d.ProjectName != nil {
 					projectName = *d.ProjectName
 				}
+				entryPath := d.EntryPath
 				deps[i] = gateway.GatewayDeployment{
 					ID:          d.ID,
 					Hash:        d.Hash,
 					ProjectID:   d.ProjectID,
 					ProjectName: projectName,
+					EntryPath:   &entryPath,
 				}
 			}
 			if readyDeps.Items[0].ProjectName != nil {
-				if err := tg.WriteProjectConfig(projectID, *readyDeps.Items[0].ProjectName, deps); err != nil && logger != nil {
+				if err := tg.WriteProjectConfig(dep.ProjectID, *readyDeps.Items[0].ProjectName, deps); err != nil && logger != nil {
 					logger.ErrorContext(ctx, "failed to write traefik config", "error", err)
 				}
 			}
@@ -158,6 +195,6 @@ func processDeploymentTask(
 	}
 
 	if logger != nil {
-		logger.InfoContext(ctx, "deployment task completed", "deployment_id", id)
+		logger.InfoContext(ctx, "deployment task completed", "deployment_id", dep.ID)
 	}
 }

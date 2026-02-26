@@ -23,7 +23,8 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 			hash,
 			status,
 			created_at,
-			expired_at
+			expired_at,
+			entry_path
 		FROM deployments
 		WHERE id = $1
 	`
@@ -36,6 +37,7 @@ func (r *PostgresRepository) GetByID(ctx context.Context, d GetSingleDeployment)
 		&deployment.Status,
 		&deployment.CreatedAt,
 		&deployment.ExpiredAt,
+		&deployment.EntryPath,
 	)
 
 	if err != nil {
@@ -58,6 +60,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 				d.status,
 				d.created_at,
 				d.expired_at,
+				d.entry_path,
 				p.name AS project_name,
 				COUNT(*) OVER () AS total_count
 			FROM deployments d
@@ -74,6 +77,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 			status,
 			created_at,
 			expired_at,
+			entry_path,
 			project_name,
 			total_count
 		FROM deployments_cte
@@ -85,7 +89,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 	}
 	defer rows.Close()
 
-	var deployments []*Deployment
+	deployments := make([]Deployment, 0)
 	var totalCount int64
 
 	for rows.Next() {
@@ -98,6 +102,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 			&deployment.Status,
 			&deployment.CreatedAt,
 			&deployment.ExpiredAt,
+			&deployment.EntryPath,
 			&projectName,
 			&totalCount,
 		)
@@ -105,7 +110,7 @@ func (r *PostgresRepository) GetPaged(ctx context.Context, params GetPagedDeploy
 			return nil, fmt.Errorf("failed to scan deployment row: %w", err)
 		}
 		deployment.ProjectName = projectName
-		deployments = append(deployments, deployment)
+		deployments = append(deployments, *deployment)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -131,8 +136,8 @@ func (r *PostgresRepository) Upload(ctx context.Context, d UploadDeployment) (st
 	expiredAt := "NOW() + INTERVAL '30 days'"
 
 	query := fmt.Sprintf(`
-		INSERT INTO deployments (project_id, hash, status, expired_at)
-		VALUES ($1, $2, $3, %s)
+		INSERT INTO deployments (project_id, hash, status, entry_path, expired_at)
+		VALUES ($1, $2, $3, $4, %s)
 		RETURNING id
 	`, expiredAt)
 
@@ -140,6 +145,7 @@ func (r *PostgresRepository) Upload(ctx context.Context, d UploadDeployment) (st
 		d.ProjectID,
 		d.Hash,
 		StatusPending,
+		d.EntryPath,
 	).Scan(&ID)
 
 	if err != nil {
@@ -173,7 +179,8 @@ func (r *PostgresRepository) GetExpired(ctx context.Context) ([]Deployment, erro
 			hash,
 			status,
 			created_at,
-			expired_at
+			expired_at,
+			entry_path
 		FROM deployments
 		WHERE expired_at IS NOT NULL
 		AND expired_at <= NOW()
@@ -197,6 +204,7 @@ func (r *PostgresRepository) GetExpired(ctx context.Context) ([]Deployment, erro
 			&deployment.Status,
 			&deployment.CreatedAt,
 			&deployment.ExpiredAt,
+			&deployment.EntryPath,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan expired deployment: %w", err)
 		}
@@ -209,4 +217,3 @@ func (r *PostgresRepository) GetExpired(ctx context.Context) ([]Deployment, erro
 
 	return deployments, nil
 }
-

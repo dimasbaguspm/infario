@@ -7,7 +7,6 @@ import (
 	"github.com/dimasbaguspm/infario/internal/gateway"
 	"github.com/dimasbaguspm/infario/internal/platform/engine"
 	"github.com/dimasbaguspm/infario/internal/resources/deployment/workers"
-	"github.com/dimasbaguspm/infario/pkgs/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
@@ -16,13 +15,12 @@ import (
 func InitWorkers(
 	ctx context.Context,
 	db *pgxpool.Pool,
-	fileEngine *engine.FileEngine,
-	cfg *config.Config,
 	redisClient *redis.Client,
+	fileEngine *engine.FileEngine,
+	ng *gateway.NginxGateway,
 ) {
 	logger := slog.Default()
-	tg := gateway.NewTraefikGateway("./traefik/dynamic", cfg.TraefikDomain)
 
-	workers.StartDeploymentConsumer(ctx, db, tg, redisClient, logger)
-	workers.StartExpiryCleanup(ctx, db, fileEngine, tg, logger)
+	workers.StartDeploymentConsumer(ctx, db, ng, redisClient, fileEngine, logger)
+	workers.StartExpiryCleanup(ctx, db, fileEngine, ng, logger)
 }

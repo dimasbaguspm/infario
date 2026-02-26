@@ -21,6 +21,9 @@ definitions:
     properties:
       created_at:
         type: string
+      entry_path:
+        description: URL path prefix for Traefik routing
+        type: string
       expired_at:
         description: 'Nullable: some builds may never expire'
         type: string
@@ -185,6 +188,11 @@ paths:
       - description: Content-addressable hash
         in: formData
         name: hash
+        required: true
+        type: string
+      - description: URL path prefix for Traefik routing
+        in: formData
+        name: entry_path
         required: true
         type: string
       - description: Binary file (zip or tar.gz)

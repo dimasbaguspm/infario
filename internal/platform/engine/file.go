@@ -12,8 +12,7 @@ import (
 	"strings"
 )
 
-// FileEngine handles generic filesystem CRUD operations for binary assets.
-// The consumer is responsible for determining the directory structure.
+// FileEngine handles archive extraction and filesystem operations.
 type FileEngine struct {
 	BaseDir string
 }
@@ -23,53 +22,85 @@ func NewFileEngine(baseDir string) *FileEngine {
 	return &FileEngine{BaseDir: baseDir}
 }
 
-// Store extracts archive content (zip or tar.gz) into the given path with content-addressable deduplication.
-// path should be relative to BaseDir (e.g., "deployments/project-id/hash/filename.tar.gz").
+// Extract extracts archive content (zip or tar.gz) into the destination directory.
+// If the archive contains a single root directory, its contents are extracted directly.
+// Otherwise, all archive contents are extracted as-is.
+// destPath should be relative to BaseDir (e.g., "deployments/project-id/deployment-id").
 // Automatically detects format from filename extension.
-// Returns true if extraction happened, false if path already exists (deduplication).
-// Uses atomic rename to ensure consistency on failure.
-func (e *FileEngine) Store(ctx context.Context, path string, archiveData io.Reader) (bool, error) {
-	finalPath := filepath.Join(e.BaseDir, path)
-	tmpPath := filepath.Join(e.BaseDir, path+"_tmp")
+func (e *FileEngine) Extract(ctx context.Context, destPath string, archiveData io.Reader, filename string) error {
+	fullDestPath := filepath.Join(e.BaseDir, destPath)
+	tempPath := filepath.Join(e.BaseDir, destPath+"_extract_tmp")
 
-	// 1. Content-Addressable Check (Deduplication)
-	if _, err := os.Stat(finalPath); err == nil {
-		return false, nil
+	// Create temporary directory for extraction
+	if err := os.MkdirAll(tempPath, 0755); err != nil {
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
+	defer os.RemoveAll(tempPath)
 
-	// 2. Prepare Directories
-	if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
-		return false, fmt.Errorf("failed to create directories: %w", err)
-	}
-
-	// Cleanup any failed previous attempts
-	_ = os.RemoveAll(tmpPath)
-
-	// 3. Extract to Temporary Folder (detect format from filename)
-	destDir := tmpPath
-	if strings.HasSuffix(path, ".tar.gz") || strings.HasSuffix(path, ".tgz") {
-		if err := e.extractTarGz(archiveData, destDir); err != nil {
-			_ = os.RemoveAll(tmpPath)
-			return false, fmt.Errorf("tar.gz extraction failed: %w", err)
+	// Detect format and extract to temporary location
+	if strings.HasSuffix(filename, ".tar.gz") || strings.HasSuffix(filename, ".tgz") {
+		if err := e.extractTarGz(archiveData, tempPath); err != nil {
+			return fmt.Errorf("tar.gz extraction failed: %w", err)
+		}
+	} else if strings.HasSuffix(filename, ".zip") {
+		if err := e.unzip(archiveData, tempPath); err != nil {
+			return fmt.Errorf("zip extraction failed: %w", err)
 		}
 	} else {
-		if err := e.unzip(archiveData, destDir); err != nil {
-			_ = os.RemoveAll(tmpPath)
-			return false, fmt.Errorf("zip extraction failed: %w", err)
+		return fmt.Errorf("unsupported archive format: %s", filename)
+	}
+
+	// Check if extracted content has a single root directory
+	entries, err := os.ReadDir(tempPath)
+	if err != nil {
+		return fmt.Errorf("failed to read extracted contents: %w", err)
+	}
+
+	// If single root directory, move its contents up one level
+	if len(entries) == 1 && entries[0].IsDir() {
+		singleDirPath := filepath.Join(tempPath, entries[0].Name())
+		subEntries, err := os.ReadDir(singleDirPath)
+		if err == nil && len(subEntries) > 0 {
+			// Create destination and move contents from subdirectory
+			if err := os.MkdirAll(fullDestPath, 0755); err != nil {
+				return fmt.Errorf("failed to create destination directory: %w", err)
+			}
+			for _, entry := range subEntries {
+				src := filepath.Join(singleDirPath, entry.Name())
+				dst := filepath.Join(fullDestPath, entry.Name())
+				if err := os.Rename(src, dst); err != nil {
+					return fmt.Errorf("failed to move extracted content: %w", err)
+				}
+			}
+			return nil
 		}
 	}
 
-	// 4. Atomic Rename (The "Commit")
-	if err := os.Rename(tmpPath, finalPath); err != nil {
-		_ = os.RemoveAll(tmpPath)
-		return false, fmt.Errorf("failed to finalize storage: %w", err)
+	// Otherwise, move all extracted content to destination
+	if err := os.MkdirAll(fullDestPath, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+	for _, entry := range entries {
+		src := filepath.Join(tempPath, entry.Name())
+		dst := filepath.Join(fullDestPath, entry.Name())
+		if err := os.Rename(src, dst); err != nil {
+			return fmt.Errorf("failed to move extracted content: %w", err)
+		}
 	}
 
-	return true, nil
+	return nil
+}
+
+// Exists checks if the given path exists in storage (file or directory).
+// path should be relative to BaseDir.
+func (e *FileEngine) Exists(ctx context.Context, path string) bool {
+	fullPath := filepath.Join(e.BaseDir, path)
+	_, err := os.Stat(fullPath)
+	return err == nil
 }
 
 // Remove cleans up assets from the disk at the given path.
-// path should be relative to BaseDir (same format as Store).
+// path should be relative to BaseDir.
 func (e *FileEngine) Remove(ctx context.Context, path string) error {
 	fullPath := filepath.Join(e.BaseDir, path)
 	return os.RemoveAll(fullPath)

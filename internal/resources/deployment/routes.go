@@ -80,6 +80,7 @@ func (h *handler) handleGetPagedDeployments(w http.ResponseWriter, r *http.Reque
 // @Produce      json
 // @Param project_id formData string true "Project ID"
 // @Param hash formData string true "Content-addressable hash"
+// @Param entry_path formData string true "URL path prefix for Traefik routing"
 // @Param file formData file true "Binary file (zip or tar.gz)"
 // @Success      201 {object} Deployment
 // @Failure      400 {object} response.ErrorResponse "Invalid request"
@@ -96,6 +97,7 @@ func (h *handler) handleUpload(w http.ResponseWriter, r *http.Request) {
 	req := UploadDeployment{
 		ProjectID:  r.FormValue("project_id"),
 		Hash:       r.FormValue("hash"),
+		EntryPath:  r.FormValue("entry_path"),
 		FileUpload: *upload,
 	}
 

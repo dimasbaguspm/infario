@@ -10,6 +10,7 @@ import (
 	"time"
 
 	_ "github.com/dimasbaguspm/infario/docs" // Import generated docs
+	"github.com/dimasbaguspm/infario/internal/gateway"
 	"github.com/dimasbaguspm/infario/internal/platform/engine"
 	"github.com/dimasbaguspm/infario/internal/resources"
 	"github.com/dimasbaguspm/infario/pkgs/config"
@@ -57,11 +58,12 @@ func main() {
 	defer redisClient.Close()
 
 	fileEngine := engine.NewFileEngine("./storage")
+	ng := gateway.NewNginxGateway("./nginx/conf.d", cfg.NginxDomain, "./storage")
 
 	mux := http.NewServeMux()
 
 	// Initialize background workers (consumers that drain from Redis)
-	resources.InitWorkers(ctx, db, fileEngine, cfg, redisClient)
+	resources.InitWorkers(ctx, db, redisClient, fileEngine, ng)
 
 	// Initialize HTTP routes (service emits directly to Redis)
 	resources.InitHttps(mux, db, redisClient, fileEngine)

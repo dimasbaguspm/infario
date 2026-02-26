@@ -46,3 +46,4 @@ go.sum
 
 storage
 traefik
+nginx/conf.d/*

@@ -96,6 +96,13 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "URL path prefix for Traefik routing",
+                        "name": "entry_path",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
                         "type": "file",
                         "description": "Binary file (zip or tar.gz)",
                         "name": "file",
@@ -441,6 +448,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "entry_path": {
+                    "description": "URL path prefix for Traefik routing",
                     "type": "string"
                 },
                 "expired_at": {

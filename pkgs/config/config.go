@@ -17,7 +17,7 @@ type Config struct {
 
 	RedisURL string `env:"REDIS_URL,required"`
 
-	TraefikDomain string `env:"TRAEFIK_DOMAIN" envDefault:"infario.site"`
+	NginxDomain string `env:"NGINX_DOMAIN" envDefault:"infario.site"`
 }
 
 func Load() *Config {

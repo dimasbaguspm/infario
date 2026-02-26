@@ -56,30 +56,30 @@ func (s *Service) Upload(ctx context.Context, d UploadDeployment) (*Deployment, 
 		return nil, fmt.Errorf("Failed to create deployment record: %w", err)
 	}
 
-	// Extract and store the uploaded file synchronously (before emitting task)
-	file, err := d.File.Open()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to open upload file: %w", err)
-	}
-	defer file.Close()
-
-	// Store file to FileEngine at deployments/{projectId}/{hash}/
-	path := "deployments/" + d.ProjectID + "/" + d.Hash + "/" + d.File.Filename
-	_, err = s.fileEngine.Store(ctx, path, file)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to store deployment file: %w", err)
-	}
-
-	// Emit task to Redis asynchronously (file is guaranteed to be stored now)
+	// Extract uploaded archive asynchronously
 	go func() {
-		task := struct {
-			ID        string `json:"id"`
-			ProjectID string `json:"project_id"`
-			Hash      string `json:"hash"`
-		}{
-			ID:        ID,
-			ProjectID: d.ProjectID,
-			Hash:      d.Hash,
+		destPath := "deployments/" + d.ProjectID + "/" + ID
+
+		// Open and extract the file
+		file, err := d.File.Open()
+		if err != nil {
+			fmt.Printf("failed to open upload file for extraction: %v\n", err)
+			return
+		}
+		defer file.Close()
+
+		err = s.fileEngine.Extract(context.Background(), destPath, file, d.File.Filename)
+		if err != nil {
+			fmt.Printf("failed to extract deployment file: %v\n", err)
+			return
+		}
+
+		// After extraction, emit task to Redis for validation and Traefik config
+		task := DeploymentTask{
+			Deployment: &Deployment{
+				ID: ID,
+			},
+			OriginalName: d.File.Filename,
 		}
 		if err := redis.Emit(context.Background(), s.redis, QueueKey, task); err != nil {
 			fmt.Printf("failed to emit deployment task: %v\n", err)

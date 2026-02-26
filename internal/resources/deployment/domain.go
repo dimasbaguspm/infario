@@ -23,13 +23,21 @@ const (
 // @Description Deployment entity representing a built artifact with content-addressable identifier
 // @Name Deployment
 type Deployment struct {
-	ID            string     `json:"id"`
-	ProjectID     string     `json:"project_id"`
-	Hash          string     `json:"hash"` // The content-addressable identifier
-	Status        string     `json:"status"`
-	CreatedAt     time.Time  `json:"created_at"`
-	ExpiredAt     *time.Time `json:"expired_at,omitempty"` // Nullable: some builds may never expire
-	ProjectName   *string    `json:"project_name,omitempty"`
+	ID          string     `json:"id"`
+	ProjectID   string     `json:"project_id"`
+	Hash        string     `json:"hash"` // The content-addressable identifier
+	Status      string     `json:"status"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ExpiredAt   *time.Time `json:"expired_at,omitempty"` // Nullable: some builds may never expire
+	ProjectName *string    `json:"project_name,omitempty"`
+	EntryPath   string     `json:"entry_path"` // URL path prefix for Traefik routing
+}
+
+// DeploymentTask extends Deployment with temporary metadata for async file processing.
+// This struct is used internally during file upload/processing and is not persisted to the database.
+type DeploymentTask struct {
+	*Deployment
+	OriginalName string `json:"original_name"` // Original uploaded filename
 }
 
 // GetSingleDeployment represents the payload for retrieving a deployment by ID.
@@ -51,7 +59,7 @@ type GetPagedDeployment struct {
 // DeploymentPaged represents a paginated response of deployments.
 // @Description Paginated deployment response with metadata
 // @Name DeploymentPaged
-type DeploymentPaged response.Collection[*Deployment]
+type DeploymentPaged response.Collection[Deployment]
 
 // UploadDeployment represents the payload for uploading a deployment artifact.
 // @Description Deployment upload DTO (zip or tar.gz with default 30-day TTL)
@@ -59,6 +67,7 @@ type DeploymentPaged response.Collection[*Deployment]
 type UploadDeployment struct {
 	ProjectID string `json:"project_id" validate:"required,uuid4"`
 	Hash      string `json:"hash" validate:"required"` // Content-addressable identifier
+	EntryPath string `json:"entry_path" validate:"required"`
 	request.FileUpload
 }
 
