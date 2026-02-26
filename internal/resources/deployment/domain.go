@@ -69,6 +69,7 @@ type DeploymentRepository interface {
 	GetPaged(ctx context.Context, params GetPagedDeployment) (*DeploymentPaged, error)
 	Upload(ctx context.Context, d UploadDeployment) (string, error)
 	UpdateStatus(ctx context.Context, d UpdateDeploymentStatus) error
+	GetExpired(ctx context.Context) ([]Deployment, error)
 }
 
 type DeploymentService interface {

@@ -56,7 +56,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	resources.RegisterRoutes(mux, db, deploymentWorkerPool)
+	resources.InitHttps(mux, db, deploymentWorkerPool)
+	resources.InitWorkers(ctx, db, fileEngine)
+
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusNotFound, "The requested resource was not found")

@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func RegisterRoutes(mux *http.ServeMux, db *pgxpool.Pool, workerPool *worker.DeploymentWorkerPool) {
+func InitHttps(mux *http.ServeMux, db *pgxpool.Pool, workerPool *worker.DeploymentWorkerPool) {
 	project.Init(mux, db)
-	deployment.Init(mux, db, workerPool)
+	deployment.InitHttp(mux, db, workerPool)
 }

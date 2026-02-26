@@ -154,3 +154,49 @@ func (r *PostgresRepository) UpdateStatus(ctx context.Context, d UpdateDeploymen
 
 	return nil
 }
+
+// GetExpired retrieves all deployments that have exceeded their TTL.
+func (r *PostgresRepository) GetExpired(ctx context.Context) ([]Deployment, error) {
+	query := `
+		SELECT
+			id,
+			project_id,
+			hash,
+			status,
+			created_at,
+			expired_at
+		FROM deployments
+		WHERE expired_at IS NOT NULL
+		AND expired_at <= NOW()
+		AND status != $1
+		ORDER BY expired_at ASC
+	`
+
+	rows, err := r.db.Query(ctx, query, StatusExpired)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get expired deployments: %w", err)
+	}
+	defer rows.Close()
+
+	var deployments []Deployment
+	for rows.Next() {
+		var deployment Deployment
+		if err := rows.Scan(
+			&deployment.ID,
+			&deployment.ProjectID,
+			&deployment.Hash,
+			&deployment.Status,
+			&deployment.CreatedAt,
+			&deployment.ExpiredAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan expired deployment: %w", err)
+		}
+		deployments = append(deployments, deployment)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating expired deployment rows: %w", err)
+	}
+
+	return deployments, nil
+}
